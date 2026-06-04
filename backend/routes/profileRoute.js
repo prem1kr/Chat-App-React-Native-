@@ -3,7 +3,7 @@ import { GetAllProfile, GetProfile, ProfileEdit } from '../controllers/profileCo
 
 const profileRouter = express.Router();
 
-profileRouter.post('/edit', ProfielEdit);
+profileRouter.post('/edit', ProfileEdit);
 profileRouter.get('/get/:userId', GetProfile);
 profileRouter.get('/get-all', GetAllProfile);
 
