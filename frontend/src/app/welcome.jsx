@@ -1,4 +1,4 @@
-import {Text,StyleSheet,Animated,Image} from 'react-native';
+import { Text, StyleSheet, Animated, Image } from 'react-native';
 import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,19 +20,19 @@ export default function Welcome() {
         const storedUser = await AsyncStorage.getItem("user");
         setTimeout(() => {
           if (!storedUser) {
-            return router.replace('/pages/login');
+            return router.replace('/login');
           }
           const user = JSON.parse(storedUser);
           if (user.role === "admin") {
             router.replace('/admin/home');
           } else {
-            router.replace('/(tabs)/home');
+            router.replace('/users/home');
           }
         }, 3000);
 
       } catch (error) {
         console.log(error);
-        router.replace('/pages/login');
+        router.replace('/login');
       }
     };
     checkUser();

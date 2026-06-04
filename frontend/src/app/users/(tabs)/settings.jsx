@@ -1,0 +1,158 @@
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "../../../components/appHeader";
+
+export default function Settings() {
+    const [darkMode, setDarkMode] = useState(false);
+
+    const handleLogout = () => {
+        Alert.alert("Logout", "Are you sure you want to logout?",
+            [{ text: "Cancel", style: "cancel" },
+            { text: "Logout", style: "destructive", onPress: () => { console.log("Logout User") }, },
+            ]
+        );
+    };
+
+    return (
+        <>
+            <AppHeader title="Settings" username="Prem Kumar" />
+            <ScrollView style={styles.container} showsVerticalScrollIndicator={false} >
+
+                <View style={styles.profileCard}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>PK</Text>
+                    </View>
+
+                    <Text style={styles.name}> Prem Kumar </Text>
+                    <Text style={styles.email}> prem@example.com  </Text>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}> Account </Text>
+
+                    <TouchableOpacity style={styles.settingItem}>
+                        <Ionicons   name="person-outline"  size={22}  color="#4facfe" />
+                        <Text style={styles.settingText}> Edit Profile </Text>
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.settingItem}>
+                        <Ionicons name="lock-closed-outline" size={22} color="#4facfe"/>
+                        <Text style={styles.settingText}>  Change Password </Text>
+                        <Ionicons name="chevron-forward"  size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}> Appearance </Text>
+
+                    <View style={styles.settingItem}>
+                        <Ionicons  name="moon-outline" size={22} color="#7b5cff"/>
+                        <Text style={styles.settingText}> Dark Mode </Text>
+                        <Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: "#dbeafe",true: "#7b5cff"  }}/>
+                    </View>
+                </View>
+
+                <TouchableOpacity  style={styles.logoutBtn} onPress={handleLogout} >
+                    <Ionicons name="log-out-outline" size={22} color="#fff"/>
+                    <Text style={styles.logoutText}> Logout </Text>
+                </TouchableOpacity>
+
+            </ScrollView>
+        </>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#f4f7ff",
+        padding: 12,
+    },
+
+    profileCard: {
+        backgroundColor: "#fff",
+        borderRadius: 24,
+        paddingVertical: 25,
+        alignItems: "center",
+        marginBottom: 20,
+        elevation: 4,
+    },
+
+    avatar: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        backgroundColor: "#7b5cff",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    avatarText: {
+        color: "#fff",
+        fontSize: 28,
+        fontWeight: "700",
+    },
+
+    name: {
+        marginTop: 12,
+        fontSize: 20,
+        fontWeight: "700",
+        color: "#111827",
+    },
+
+    email: {
+        marginTop: 4,
+        color: "#64748b",
+    },
+
+    section: {
+        backgroundColor: "#fff",
+        borderRadius: 20,
+        paddingVertical: 8,
+        marginBottom: 18,
+        elevation: 2,
+    },
+
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#64748b",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+
+    settingItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+    },
+
+    settingText: {
+        flex: 1,
+        marginLeft: 14,
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#111827",
+    },
+
+    logoutBtn: {
+        backgroundColor: "#ef4444",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingVertical: 16,
+        borderRadius: 18,
+        marginTop: 10,
+        marginBottom: 120,
+    },
+
+    logoutText: {
+        color: "#fff",
+        marginLeft: 8,
+        fontWeight: "700",
+        fontSize: 16,
+    },
+});

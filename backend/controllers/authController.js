@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 export const Signup = async (req, res) => {
     try {
         const { role, name, email, password } = req.body;
+        if (!email || !password || !name) {
+            return res.status(400).json({ success: false, message: "All fields are required" });
+        }
+        
         const existingUser = await authModel.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ success: false, message: "User already exists" });
