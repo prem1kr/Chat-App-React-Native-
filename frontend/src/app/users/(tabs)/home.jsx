@@ -67,7 +67,7 @@ export default function UserHome() {
     return (
         <>
             <StatusBar backgroundColor="#4facfe" barStyle="light-content" />
-            <AppHeader username="Prem Kumar" />
+            <AppHeader  />
 
             <View style={styles.container}>
 

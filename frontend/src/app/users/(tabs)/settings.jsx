@@ -1,46 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
 
 export default function Settings() {
     const [darkMode, setDarkMode] = useState(false);
+    const user = useSelector(state => state.user.user || []);
+    const router = useRouter();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         Alert.alert("Logout", "Are you sure you want to logout?",
             [{ text: "Cancel", style: "cancel" },
             { text: "Logout", style: "destructive", onPress: () => { console.log("Logout User") }, },
             ]
         );
+
+        await AsyncStorage.removeItem('user');
+        await AsyncStorage.removeItem('userId');
+        await AsyncStorage.removeItem('token');
+
+        router.push('/login')
     };
 
     return (
         <>
-            <AppHeader title="Settings" username="Prem Kumar" />
+            <AppHeader title="Settings" />
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false} >
 
                 <View style={styles.profileCard}>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>PK</Text>
+                        <Text style={styles.avatarText}>
+                            {user?.name?.split(" ").map(word => word[0]).slice(0, 2).join("").toUpperCase()}
+                        </Text>
                     </View>
 
-                    <Text style={styles.name}> Prem Kumar </Text>
-                    <Text style={styles.email}> prem@example.com  </Text>
+                    <Text style={styles.name}> {user?.name} </Text>
+                    <Text style={styles.email}> {user?.email}  </Text>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}> Account </Text>
 
-                    <TouchableOpacity style={styles.settingItem}>
-                        <Ionicons   name="person-outline"  size={22}  color="#4facfe" />
+                    <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/users/pages/profile')} >
+                        <Ionicons name="person-outline" size={22} color="#4facfe" />
                         <Text style={styles.settingText}> Edit Profile </Text>
                         <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.settingItem}>
-                        <Ionicons name="lock-closed-outline" size={22} color="#4facfe"/>
+                        <Ionicons name="lock-closed-outline" size={22} color="#4facfe" />
                         <Text style={styles.settingText}>  Change Password </Text>
-                        <Ionicons name="chevron-forward"  size={20} color="#94a3b8" />
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
                     </TouchableOpacity>
                 </View>
 
@@ -48,14 +61,14 @@ export default function Settings() {
                     <Text style={styles.sectionTitle}> Appearance </Text>
 
                     <View style={styles.settingItem}>
-                        <Ionicons  name="moon-outline" size={22} color="#7b5cff"/>
+                        <Ionicons name="moon-outline" size={22} color="#7b5cff" />
                         <Text style={styles.settingText}> Dark Mode </Text>
-                        <Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: "#dbeafe",true: "#7b5cff"  }}/>
+                        <Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: "#dbeafe", true: "#7b5cff" }} />
                     </View>
                 </View>
 
-                <TouchableOpacity  style={styles.logoutBtn} onPress={handleLogout} >
-                    <Ionicons name="log-out-outline" size={22} color="#fff"/>
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} >
+                    <Ionicons name="log-out-outline" size={22} color="#fff" />
                     <Text style={styles.logoutText}> Logout </Text>
                 </TouchableOpacity>
 

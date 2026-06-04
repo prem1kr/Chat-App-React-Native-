@@ -4,7 +4,6 @@ import Constants from "expo-constants";
 
 const { API_URL, SOCKET_URL, GOOGLE_MAPS_KEY } = Constants.expoConfig.extra;
 
-console.log(API_URL)
 export const userInfo = async () => {
     try {
         const token = await AsyncStorage.getItem("token");
