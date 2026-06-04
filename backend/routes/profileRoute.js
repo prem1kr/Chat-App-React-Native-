@@ -1,9 +1,9 @@
 import express from 'express';
-import { GetAllProfile, GetProfile, ProfielEdit } from '../controllers/profileController.js';
+import { GetAllProfile, GetProfile, ProfileEdit } from '../controllers/profileController.js';
 
 const profileRouter = express.Router();
 
-profileRouter.post('/edit', ProfielEdit);
+profileRouter.post('/edit', ProfileEdit);
 profileRouter.get('/get/:userId', GetProfile);
 profileRouter.get('/get-all', GetAllProfile);
 
