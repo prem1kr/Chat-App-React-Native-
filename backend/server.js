@@ -7,6 +7,9 @@ import ConnectMongoose from "./config/db.js";
 import authRouter from "./routes/authRoute.js";
 import profileRouter from "./routes/profileRoute.js";
 import { initializeSocket } from "./socket/socket.js";
+import chatRouter from "./routes/chatRoute.js";
+import groupRouter from "./routes/groupRoute.js";
+import messageRouter from "./routes/messageRoute.js";
 
 dotenv.config();
 const app = express();
@@ -32,6 +35,9 @@ initializeSocket(io);
 
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/group', groupRouter);
+app.use('/api/message', messageRouter);
 
 
 server.listen(process.env.PORT || 5000, async () => {

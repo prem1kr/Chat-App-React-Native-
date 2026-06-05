@@ -5,23 +5,37 @@ const authSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ["user", "admin"],
-        default: 'user'
+        default: "user",
     },
+
     name: {
         type: String,
-        trim: true
+        required: true,
+        trim: true,
     },
 
     email: {
         type: String,
         unique: true,
         required: true,
-        trim: true
+        trim: true,
     },
+
     password: {
         type: String,
-        required: true
+        required: true,
     },
+
+    profilePic: {
+        type: String,
+        default: "",
+    },
+
+    isOnline: {
+        type: Boolean,
+        default: false,
+    },
+
     lastActive: {
         type: Date,
         default: Date.now,

@@ -8,11 +8,10 @@ import { userInfo } from "../hooks/useAuth";
 import { socket } from "../socket/socket";
 
 export default function RootLayout() {
-  const [userData, setUserData] = useState();
 
   function AppInitializer() {
     const dispatch = useDispatch();
-
+    const [userData, setUserData] = useState(null);
     const loadUserData = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
@@ -48,10 +47,13 @@ export default function RootLayout() {
       socket.connect();
 
       socket.on("connect", () => {
+        console.log("Socket connected:", socket.id);
         socket.emit("join", userData?._id);
       });
       return () => {
         socket.off("connect");
+        socket.disconnect();
+
       }
     }, [userData]);
 

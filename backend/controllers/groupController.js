@@ -1,0 +1,166 @@
+import groupModel from "../models/groupModel";
+
+export const createGroup = async (req, res) => {
+  try {
+    const { groupName, groupImage, members } = req.body;
+    const admin = req.user.id;
+
+    if (!groupName) {
+      return res.status(400).json({ success: false, message: "Group name is required" });
+    }
+
+    const uniqueMembers = [...new Set([...members, admin])];
+    const group = await groupModel.create({
+      groupName,
+      groupImage,
+      admin,
+      members: uniqueMembers,
+    });
+
+    const populatedGroup = await groupModel.findById(group._id).populate("admin", "name email profilePic").populate("members", "name email profilePic");
+    return res.status(201).json({ success: true, message: "Group created successfully", group: populatedGroup });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const getUserGroups = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const groups = await groupModel.find({ members: userId }).populate("admin", "name profilePic").populate("members", "name profilePic").sort({ updatedAt: -1 });
+    return res.status(200).json({ success: true, groups });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const getGroupById = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const group = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    return res.status(200).json({ success: true, group });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const addMember = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { memberId } = req.body;
+    const userId = req.user.id;
+
+    const group = await groupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    if (group.admin.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only admin can add members" });
+    }
+    if (group.members.includes(memberId)) {
+      return res.status(400).json({ success: false, message: "User already exists in group" });
+    }
+
+    group.members.push(memberId);
+    await group.save();
+    return res.status(200).json({ success: true, message: "Member added successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const removeMember = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { memberId } = req.body;
+    const userId = req.user.id;
+
+    const group = await groupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    if (group.admin.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only admin can remove members" });
+    }
+
+    group.members = group.members.filter((member) => member.toString() !== memberId);
+    await group.save();
+    return res.status(200).json({ success: true, message: "Member removed successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const updateGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { groupName, groupImage } = req.body;
+    const userId = req.user.id;
+
+    const group = await groupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    if (group.admin.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only admin can update group" });
+    }
+
+    if (groupName) group.groupName = groupName;
+    if (groupImage) group.groupImage = groupImage;
+    await group.save();
+
+    return res.status(200).json({ success: true, message: "Group updated successfully", group });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};
+
+
+export const deleteGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user.id;
+
+    const group = await groupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    if (group.admin.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only admin can delete group" });
+    }
+
+    await groupModel.findByIdAndDelete(groupId);
+    return res.status(200).json({ success: true, message: "Group deleted successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+  }
+};

@@ -43,7 +43,7 @@ export const Signup = async (req, res) => {
 export const Login = async (req, res) => {
     try {
         const { email, password, role } = req.body;
-        const user = await authModel.findOne({ email });
+        let user = await authModel.findOne({ email });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not registered" });
         }
@@ -68,16 +68,22 @@ export const Login = async (req, res) => {
             { expiresIn: "7d" }
         );
 
-        return res.status(200).json({
-            success: true, message: "Login successful", token,
+        user.isOnline = true;
+        user.lastActive = new Date();
+        await user.save();
+
+        return res.status(200).json({ success: true, message: "Login successful", token,
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                profilePic: user.profilePic,
+                isOnline: user.isOnline,
+                lastActive: user.lastActive,
             },
         });
-
+        
     } catch (error) {
         console.log(error);
         return res.status(500).json({ success: false, message: "Server Error" });
