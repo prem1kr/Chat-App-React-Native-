@@ -51,10 +51,10 @@ export default function Contacts() {
         const isSelected = selectedUsers.includes(item?._id);
 
         return (
-            <TouchableOpacity activeOpacity={0.85} delayLongPress={300} onLongPress={() => { toggleUser(item?._id) }}
+            <TouchableOpacity activeOpacity={0.85} delayLongPress={300} onLongPress={() => { toggleUser(item) }}
                 onPress={() => {
                     if (selectedUsers.length > 0) {
-                        toggleUser(item?._id);
+                        toggleUser(item);
                     } else {
                         chatWindow(item);
                     }
@@ -236,8 +236,11 @@ const styles = StyleSheet.create({
     selectedBanner: {
         backgroundColor: "#4facfe",
         paddingVertical: 10,
+        paddingHorizontal: 15,
         borderRadius: 14,
         marginBottom: 12,
+        flexDirection: "row",
+        justifyContent: "space-between",
         alignItems: "center",
     },
 

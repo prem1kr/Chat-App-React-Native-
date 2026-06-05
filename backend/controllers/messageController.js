@@ -6,14 +6,7 @@ import messageModel from "../models/messageModel.js";
 export const sendMessage = async (req, res) => {
   try {
     const sender = req.user.id;
-
-    const {
-      chatId,
-      groupId,
-      text,
-      messageType,
-      mediaUrl,
-    } = req.body;
+    const { chatId, groupId, text, messageType, mediaUrl } = req.body;
 
     if (!chatId && !groupId) {
       return res.status(400).json({ success: false, message: "chatId or groupId is required" });

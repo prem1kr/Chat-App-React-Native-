@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Constants from "expo-constants";
 
-const { API_URL, SOCKET_URL, GOOGLE_MAPS_KEY } = Constants.expoConfig.extra;
+const { API_URL } = Constants.expoConfig.extra;
 
 export const userInfo = async () => {
     try {

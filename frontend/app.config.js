@@ -17,7 +17,6 @@ export default {
     android: {
       package: "com.premkumar.chatapp",
       adaptiveIcon: {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/icon.png",
         "backgroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/icon.png"
