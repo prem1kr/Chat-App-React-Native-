@@ -1,70 +1,73 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
-
-const dummyUsers = [
-    {
-        id: "1",
-        name: "Rahul Sharma",
-        status: "Online",
-    },
-    {
-        id: "2",
-        name: "Anjali",
-        status: "Offline",
-    },
-    {
-        id: "3",
-        name: "Vikas Kumar",
-        status: "Online",
-    },
-    {
-        id: "4",
-        name: "Priya",
-        status: "Online",
-    },
-];
+import { getAlluser } from "../../../hooks/useAuth";
+import { useDispatch, useSelector } from "react-redux";
+import { setUsers } from "../../../redux/slices/usersSlice";
+import { useRouter } from "expo-router";
 
 export default function Contacts() {
+    const router = useRouter();
+    const dispatch = useDispatch();
     const [search, setSearch] = useState("");
     const [selectedUsers, setSelectedUsers] = useState([]);
-    const filteredUsers = dummyUsers.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
+    const Users = useSelector(state => state.users.users || []);
+    const filteredUsers = Users.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
 
     const getInitials = (name) => {
         return name.split(" ").map((n) => n[0]).join("").toUpperCase();
     };
 
-    const toggleUser = (userId) => {
+    const toggleUser = (item) => {
+        const id = item?._id || item?.id;
         setSelectedUsers((prev) => {
-            if (prev.includes(userId)) {
-                return prev.filter((id) => id !== userId);
+            if (prev.includes(id)) {
+                return prev.filter((i) => i !== id);
             }
-            return [...prev, userId];
+            return [...prev, id];
         });
     };
 
+    const chatWindow = (item) => {
+        router.push({
+            pathname: '/users/pages/chat',
+            params: { userId: item?._id, name: item?.name }
+        });
+    };
+
+    const fetchAllUsers = async () => {
+        const response = await getAlluser();
+        if (response.success) {
+            dispatch(setUsers(response.users));
+        }
+    }
+
+    useEffect(() => {
+        fetchAllUsers();
+    }, []);
+
     const renderItem = ({ item }) => {
-        const isSelected = selectedUsers.includes(item.id);
+        const isSelected = selectedUsers.includes(item?._id);
 
         return (
-            <TouchableOpacity activeOpacity={0.85} delayLongPress={300} onLongPress={() => { toggleUser(item.id) }}
+            <TouchableOpacity activeOpacity={0.85} delayLongPress={300} onLongPress={() => { toggleUser(item?._id) }}
                 onPress={() => {
                     if (selectedUsers.length > 0) {
-                        toggleUser(item.id);
+                        toggleUser(item?._id);
                     } else {
-                        console.log("Open chat with:", item.name);
+                        chatWindow(item);
                     }
                 }} style={[styles.userCard, isSelected && styles.selectedCard]} >
 
                 <View style={styles.avatar}>
-                    <Text style={styles.avatarText}> {getInitials(item.name)}</Text>
-                    {item.status === "Online" && (<View style={styles.onlineDot} />)}
+                    <Text style={styles.avatarText}> {getInitials(item?.name)}</Text>
+                    {item?.status === "Online" && (<View style={styles.onlineDot} />)}
                 </View>
 
                 <View style={styles.userInfo}>
-                    <Text style={styles.name}>  {item.name} </Text>
-                    <Text style={styles.status}> {item.status}  </Text>
+                    <Text style={styles.name}>  {item?.name} </Text>
+                    <Text style={styles.status}> {item?.status}  </Text>
                 </View>
 
                 {selectedUsers.length > 0 ? (
@@ -105,7 +108,7 @@ export default function Contacts() {
                     </View>
                 )}
 
-                <FlatList data={filteredUsers} keyExtractor={(item) => item.id} renderItem={renderItem} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }} />
+                <FlatList data={filteredUsers} keyExtractor={(item) => item?._id?.toString()} renderItem={renderItem} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }} />
 
                 {selectedUsers.length >= 2 && (
                     <TouchableOpacity style={styles.createGroupBtn} onPress={() => { console.log("Selected Users:", selectedUsers); }} >

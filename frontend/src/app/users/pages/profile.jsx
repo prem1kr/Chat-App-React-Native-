@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingButton from '../../../components/loadingButton';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader from '../../../components/appHeader';
 import { useDispatch, useSelector } from "react-redux";
-import { setProfile } from "../../../redux/slices/profileSlice";
+import { setProfile, setUpdateProfile } from "../../../redux/slices/profileSlice";
 
 const EditProfile = () => {
     const dispatch = useDispatch();
@@ -48,7 +48,8 @@ const EditProfile = () => {
             setLoading(true);
             const response = await addEditProfile(form);
             if (response?.success) {
-                console.log("Updated Profile:", form);
+                dispatch(setUpdateProfile(response.profile));
+                Alert.alert("success", "profile updated successfully");
             }
 
         } catch (error) {
@@ -71,8 +72,7 @@ const EditProfile = () => {
 
     return (
         <>
-
-            <AppHeader title="Profile" username="Prem Kumar" >
+            <AppHeader title="Profile"  >
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>

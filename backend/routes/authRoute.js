@@ -9,6 +9,6 @@ authRouter.post('/login', Login);
 authRouter.get('/user', authMiddleware, User);
 authRouter.post('/logout', Logout);
 authRouter.get('/total-user', TotalUser);
-authRouter.get('/all-users/:userId', getAllUser);
+authRouter.get('/all-users', getAllUser);
 
 export default authRouter;

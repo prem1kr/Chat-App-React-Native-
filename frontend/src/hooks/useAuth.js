@@ -17,7 +17,7 @@ export const userInfo = async () => {
 
 export const getAlluser = async (userId) => {
     try {
-        const response = await axios.get(`${API_URL}/auth/all-user/${userId}`);
+        const response = await axios.get(`${API_URL}/auth/all-users`);
         return response.data;
 
     } catch (error) {

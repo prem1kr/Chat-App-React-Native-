@@ -1,48 +1,24 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useDispatch, useSelector } from 'react-redux';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import AppHeader from "../../../components/appHeader";
+import { useLocalSearchParams } from "expo-router";
 
 const Chat = () => {
-
-    const socket = useRef(null);
+    const { userId, name } = useLocalSearchParams();
     const flatListRef = useRef(null);
     const router = useRouter();
-    const user = useSelector(state => state.user.user || {});
+    const user = useSelector((state) => state.user.user || {});
     const userName = user?.name;
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
 
-
-    // SOCKET CONNECTION
-    useEffect(() => {
-        socket.current = connectWs();
-        socket.current.on('connect', () => {
-            socket.current.emit('joinRoom', userName);
-        });
-
-        // RECEIVE MESSAGE
-        socket.current.on('chatMessage', (msg) => {
-            setMessages(prev => [...prev, msg]);
-            dispatch(setChatuser(msg.sender));
-        });
-
-        // ROOM NOTICE
-        socket.current.on('RoomNotice', (data) => {
-            console.log(data);
-        });
-
-        return () => {
-            socket.current.disconnect();
-        };
-
-    }, []);
-
-    // SEND MESSAGE
+    // SEND MESSAGE (LOCAL ONLY)
     const sendMessage = () => {
-
         if (!message.trim()) return;
+
         const msgData = {
             id: Date.now().toString(),
             text: message,
@@ -50,69 +26,45 @@ const Chat = () => {
             ts: Date.now(),
         };
 
-        // LOCAL UI UPDATE
-        setMessages(prev => [...prev, msgData]);
-        // SOCKET SEND
-        socket.current.emit('chatMessage', msgData);
+        setMessages((prev) => [...prev, msgData]);
         setMessage("");
+
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
     };
 
-    const removeSender = async () => {
-        await dispatch(removeChatuser());
-        await router.back();
-    }
-
     const renderItem = ({ item }) => {
         const isMyMessage = item.sender === userName;
-        return (
 
+        return (
             <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
-                <Text style={styles.senderName}> {isMyMessage ? 'You' : item.sender}</Text>
+                <Text style={styles.senderName}> {isMyMessage ? "You" : item.sender} </Text>
 
                 <View style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
-                    <Text style={[styles.messageText, isMyMessage && { color: '#fff' }]}>{item.text} </Text>
+                    <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]} >{item.text}</Text>
                 </View>
 
-                <Text style={styles.timeText}>
-                    {new Date(item.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-
+                <Text style={styles.timeText}> {new Date(item.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </Text>
             </View>
         );
     };
 
-
     return (
-
-        <View style={styles.container} >
-
-            {/* HEADER */}
-            <View style={styles.header}>
+        <View style={styles.container}>
+            <AppHeader title={name || "chat"}  >
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                    <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
+            </AppHeader>
 
-                <Text style={styles.headerTitle}> {senderName || 'Chat Support'} </Text>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} >
+                <FlatList ref={flatListRef} data={messages} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={styles.chatContainer} showsVerticalScrollIndicator={false}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} />
 
-                <TouchableOpacity onPress={removeSender}>
-                    <Ionicons name="exit-outline" size={24} color="#fff" />
-                </TouchableOpacity>
-            </View>
-
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={10}>
-
-                {/* CHAT LIST */}
-                <FlatList ref={flatListRef} data={messages} keyExtractor={(item) => item.id} renderItem={renderItem}
-                    contentContainerStyle={styles.chatContainer} showsVerticalScrollIndicator={false}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} keyboardShouldPersistTaps="handled" />
-
-                {/* INPUT */}
                 <View style={styles.inputContainer}>
                     <TextInput placeholder="Type a message..." placeholderTextColor="#9CA3AF" value={message} onChangeText={setMessage} style={styles.input} />
-                    <TouchableOpacity style={styles.sendButton} onPress={sendMessage} >
+                    <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
                         <Ionicons name="send" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
