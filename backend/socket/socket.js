@@ -11,7 +11,7 @@ export const initializeSocket = (io) => {
 
         });
 
-        socket.on("disconnect", () => {
+        socket.on("disconnect", async() => {
             if (socket.userId) {
                 await authModel.findByIdAndUpdate(socket.userId, { isOnline: false, lastActive: new Date() });
             }
