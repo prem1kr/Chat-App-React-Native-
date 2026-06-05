@@ -68,10 +68,6 @@ export const Login = async (req, res) => {
             { expiresIn: "7d" }
         );
 
-        user.isOnline = true;
-        user.lastActive = new Date();
-        await user.save();
-
         return res.status(200).json({ success: true, message: "Login successful", token,
             user: {
                 id: user._id,
