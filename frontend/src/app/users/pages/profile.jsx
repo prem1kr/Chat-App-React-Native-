@@ -49,7 +49,7 @@ const EditProfile = () => {
             const response = await addEditProfile(form);
             if (response?.success) {
                 dispatch(setUpdateProfile(response.profile));
-                Alert.alert("success", "profile updated successfully");
+                Alert.alert("success", response.message);
             }
 
         } catch (error) {
