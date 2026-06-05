@@ -12,16 +12,20 @@ export default function RootLayout() {
 
     const loadUserData = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          dispatch(setUser(parsedUser));
-        } else {
+        const token = await AsyncStorage.getItem("token");
+
+        if (token) {
           const response = await userInfo();
           if (response?.success) {
             dispatch(setUser(response.user));
+            await AsyncStorage.setItem("user", JSON.stringify(response.user));
           }
+        } else {
+          const storedUser = await AsyncStorage.getItem("user");
+          const user = storedUser ? JSON.parse(storedUser) : null;
+          dispatch(setUser(user));
         }
+
       } catch (error) {
         console.log(error);
       }
