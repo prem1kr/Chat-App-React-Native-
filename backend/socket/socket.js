@@ -13,7 +13,7 @@ export const initializeSocket = (io) => {
 
         socket.on("disconnect", () => {
             if (socket.userId) {
-                await User.findByIdAndUpdate(socket.userId, { isOnline: false, lastActive: new Date() });
+                await authModel.findByIdAndUpdate(socket.userId, { isOnline: false, lastActive: new Date() });
             }
             console.log("user disconnected", socket.id);
         });
