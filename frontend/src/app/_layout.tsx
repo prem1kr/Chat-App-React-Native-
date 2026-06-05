@@ -6,34 +6,34 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setUser } from '@/redux/slices/userSlice';
 import { userInfo } from "../hooks/useAuth";
 
-function AppInitializer() {
-  const dispatch = useDispatch();
-
-  const loadUserData = async () => {
-    try {
-      const storedUser = await AsyncStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        dispatch(setUser(parsedUser));
-      } else {
-        const response = await userInfo();
-        if (response?.success) {
-          dispatch(setUser(response.user));
-        }
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  return null;
-}
-
 export default function RootLayout() {
+  function AppInitializer() {
+    const dispatch = useDispatch();
+
+    const loadUserData = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          dispatch(setUser(parsedUser));
+        } else {
+          const response = await userInfo();
+          if (response?.success) {
+            dispatch(setUser(response.user));
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    useEffect(() => {
+      loadUserData();
+    }, []);
+
+    return null;
+  }
+
   return (
     <Provider store={store} >
       <AppInitializer />
@@ -41,6 +41,5 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" />
       </Stack>
     </Provider>
-
   );
 }

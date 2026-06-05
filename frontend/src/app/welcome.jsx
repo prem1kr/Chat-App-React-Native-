@@ -43,7 +43,7 @@ export default function Welcome() {
       <Animated.View style={[styles.innerContainer, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
         <Text style={styles.title}> Drive Now</Text>
-        <Text style={styles.subtitle}>Your Ride, Your Freedom</Text>
+        <Text style={styles.subtitle}>Your Chat, Your Freedom</Text>
       </Animated.View>
     </LinearGradient>
   );

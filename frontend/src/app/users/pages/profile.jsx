@@ -6,20 +6,21 @@ import { addEditProfile, getProfile } from '../../../hooks/useProfile';
 import { useRouter } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader from '../../../components/appHeader';
-import { useSelector } from "react-redux";
-
+import { useDispatch, useSelector } from "react-redux";
+import { setProfile } from "../../../redux/slices/profileSlice";
 
 const EditProfile = () => {
-
+    const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const user = useSelector(state => state.user.user || []);
     const [userId, setUserId] = useState("");
+    const profile = useSelector(state => state.profile.profile || []);
 
     const [form, setForm] = useState({
         userId: user?.id || "",
         name: "",
-        email: "user?.email",
+        email: "",
         phone: " ",
         address: "",
         bio: "",
@@ -28,13 +29,13 @@ const EditProfile = () => {
 
     useEffect(() => {
         setForm({
-            userId: user?.id || "",
-            name: user?.name || "",
-            email: user?.email || "",
-            phone: "",
-            address: "",
-            bio: "",
-            profileImage: "",
+            userId: user?.id || profile?.userId || "",
+            name: user?.name || profile?.name || "",
+            email: user?.email || profile?.email || "",
+            phone: profile?.phone || "",
+            address: profile?.address || "",
+            bio: profile?.bio || "",
+            profileImage: profile?.profileImage || "",
         });
     }, [user, userId]);
 
@@ -56,10 +57,11 @@ const EditProfile = () => {
             setLoading(false);
         }
     };
+
     const fetchProfile = async () => {
         const res = await getProfile(user?.id);
         if (res?.success) {
-            console.log(res.profile);
+            dispatch(setProfile(res.profile));
         }
     };
 

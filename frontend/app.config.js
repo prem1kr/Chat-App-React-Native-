@@ -11,22 +11,23 @@ export default {
     userInterfaceStyle: "automatic",
 
     ios: {
-      icon: "./assets/expo.icon",
+      icon: "./assets/images/icon.png",
     },
 
     android: {
+      package: "com.premkumar.chatapp",
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundImage": "./assets/images/icon.png",
+        "monochromeImage": "./assets/images/icon.png"
       },
       predictiveBackGestureEnabled: false,
     },
 
     web: {
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon: "./assets/images/icon.png",
     },
 
     plugins: [
@@ -36,7 +37,7 @@ export default {
         {
           backgroundColor: "#208AEF",
           android: {
-            image: "./assets/images/splash-icon.png",
+            image: "./assets/images/icon.png",
             imageWidth: 76,
           },
         },
@@ -48,11 +49,14 @@ export default {
       reactCompiler: true,
     },
 
-    // ✅ ENV SUPPORT ADDED HERE
     extra: {
       API_URL: process.env.API_URL,
       SOCKET_URL: process.env.SOCKET_URL,
       GOOGLE_MAPS_KEY: process.env.GOOGLE_MAPS_KEY,
+
+      eas: {
+        projectId: "87d12a1e-09c2-4e9d-bcd1-b9deeedd6523",
+      },
     },
   },
 };

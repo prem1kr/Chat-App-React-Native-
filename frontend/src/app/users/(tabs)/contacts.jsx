@@ -29,12 +29,12 @@ const dummyUsers = [
 export default function Contacts() {
     const [search, setSearch] = useState("");
     const [selectedUsers, setSelectedUsers] = useState([]);
-    const filteredUsers = dummyUsers.filter((user) =>
-        user.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredUsers = dummyUsers.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
+
     const getInitials = (name) => {
         return name.split(" ").map((n) => n[0]).join("").toUpperCase();
     };
+
     const toggleUser = (userId) => {
         setSelectedUsers((prev) => {
             if (prev.includes(userId)) {

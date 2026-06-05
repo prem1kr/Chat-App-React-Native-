@@ -8,7 +8,7 @@ export const Signup = async (req, res) => {
         if (!email || !password || !name) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
-        
+
         const existingUser = await authModel.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ success: false, message: "User already exists" });
@@ -127,9 +127,8 @@ export const Logout = async (req, res) => {
 
 export const getAllUser = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const user = await authModel.findById(userId);
-        if (!user) {
+        const user = await authModel.find();
+        if (user.length === 0) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
