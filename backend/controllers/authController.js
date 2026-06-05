@@ -127,8 +127,8 @@ export const Logout = async (req, res) => {
 
 export const getAllUser = async (req, res) => {
     try {
-        const user = await authModel.find();
-        if (user.length === 0) {
+        const users = await authModel.find();
+        if (users.length === 0) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
