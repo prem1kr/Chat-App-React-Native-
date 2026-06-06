@@ -1,7 +1,7 @@
 import chatModel from "../models/chatModel.js";
 import groupModel from "../models/groupModel.js";
 import messageModel from "../models/messageModel.js";
-
+import { io } from "../socket/socket.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -23,19 +23,37 @@ export const sendMessage = async (req, res) => {
       readBy: [sender],
     });
 
+    const populatedMessage = await messageModel.findById(message._id).populate("sender", "name profilePic");
+
+    const updateData = {
+      lastMessage: text || messageType,
+      lastMessageTime: new Date(),
+    };
     if (chatId) {
-      await chatModel.findByIdAndUpdate(chatId, { lastMessage: text || messageType, lastMessageTime: new Date() });
+      await chatModel.findByIdAndUpdate(chatId, updateData);
+    }
+    if (groupId) {
+      await groupModel.findByIdAndUpdate(groupId, updateData);
+    }
+
+
+    if (chatId) {
+      const chat = await chatModel.findById(chatId);
+      const receiverId = chat.participants.find((id) => id.toString() !== sender);
+      io.to(receiverId.toString()).emit("newMessage", populatedMessage);
+      io.to(sender.toString()).emit("messageSent", populatedMessage);
     }
 
     if (groupId) {
-      await groupModel.findByIdAndUpdate(groupId, { lastMessage: text || messageType, lastMessageTime: new Date() });
+      const group = await groupModel.findById(groupId);
+      group.members.forEach((memberId) => {
+        io.to(memberId.toString()).emit("groupMessage", populatedMessage);
+      });
     }
 
-    const populatedMessage = await messageModel.findById(message._id).populate("sender", "name profilePic");
-    return res.status(201).json({ success: true, message: "Message sent successfully", data: populatedMessage });
-
+    return res.status(201).json({ success: true, data: populatedMessage });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
   }
 };
@@ -79,10 +97,15 @@ export const markAsDelivered = async (req, res) => {
       { new: true }
     );
 
-    return res.status(200).json({ success: true, message });
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
 
+    io.to(message.sender.toString()).emit("messageDelivered", { messageId, userId });
+
+    return res.status(200).json({ success: true, message });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
   }
 };
@@ -98,10 +121,15 @@ export const markAsRead = async (req, res) => {
       { new: true }
     );
 
-    return res.status(200).json({ success: true, message });
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
 
+    io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
+
+    return res.status(200).json({ success: true, message });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
   }
 };
@@ -122,10 +150,24 @@ export const deleteMessage = async (req, res) => {
     }
 
     await messageModel.findByIdAndDelete(messageId);
-    return res.status(200).json({ success: true, message: "Message deleted successfully" });
 
+    if (message.chatId) {
+      const chat = await chatModel.findById(message.chatId);
+      const receiverId = chat.participants.find((id) => id.toString() !== userId);
+      io.to(receiverId.toString()).emit("messageDeleted", { messageId });
+      io.to(userId.toString()).emit("messageDeleted", { messageId });
+    }
+
+    if (message.groupId) {
+      const group = await groupModel.findById(message.groupId);
+      group.members.forEach((memberId) => {
+        io.to(memberId.toString()).emit("groupMessageDeleted", { messageId });
+      });
+    }
+
+    return res.status(200).json({ success: true, message: "Message deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
   }
 };
