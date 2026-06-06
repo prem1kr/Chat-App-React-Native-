@@ -1,19 +1,23 @@
 import Constants from "expo-constants";
-import axios from 'axios';
+import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { socket } from "@/socket/socket";
 
 const { API_URL } = Constants.expoConfig.extra;
+
 
 export const createGroup = async (data) => {
     try {
         const token = await AsyncStorage.getItem("token");
         const response = await axios.post(`${API_URL}/group/create`, data, { headers: { Authorization: `Bearer ${token}` } });
+        const group = response.data.group;
+        socket.emit("joinGroup", group._id);
         return response.data;
 
     } catch (error) {
         return error?.response?.data;
     }
-}
+};
 
 
 export const getUserGroups = async () => {
@@ -25,19 +29,20 @@ export const getUserGroups = async () => {
     } catch (error) {
         return error?.response?.data;
     }
-}
+};
 
 
 export const getGroupById = async (groupId) => {
     try {
         const token = await AsyncStorage.getItem("token");
         const response = await axios.get(`${API_URL}/group/${groupId}`, { headers: { Authorization: `Bearer ${token}` } });
+        socket.emit("joinGroup", groupId);
         return response.data;
 
     } catch (error) {
-        return error.response.data;
+        return error?.response?.data;
     }
-}
+};
 
 
 export const addMember = async (groupId, memberId) => {
@@ -49,7 +54,7 @@ export const addMember = async (groupId, memberId) => {
     } catch (error) {
         return error?.response?.data;
     }
-}
+};
 
 
 export const removeMember = async (groupId, memberId) => {
@@ -61,7 +66,7 @@ export const removeMember = async (groupId, memberId) => {
     } catch (error) {
         return error?.response?.data;
     }
-}
+};
 
 
 export const updateGroup = async (groupId, data) => {
@@ -73,7 +78,7 @@ export const updateGroup = async (groupId, data) => {
     } catch (error) {
         return error?.response?.data;
     }
-}
+};
 
 
 export const deleteGroup = async (groupId) => {
@@ -85,4 +90,4 @@ export const deleteGroup = async (groupId) => {
     } catch (error) {
         return error?.response?.data;
     }
-}
+};

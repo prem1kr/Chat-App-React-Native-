@@ -31,4 +31,4 @@ export const initializeSocket = (serverIo) => {
     });
 };
 
-export {io};
+export { io };
