@@ -213,12 +213,21 @@ export const deleteGroup = async (req, res) => {
 
 
 export const getAllGroups = async (req, res) => {
-  try {
 
-    const groups = await groupModel.find().sort({ updatedAt: -1 });
-    return res.status(200).json({ success: true, groups });
+  try {
+    const groups = await groupModel.find().populate("admin", "name").populate("members", "_id").sort({ updatedAt: -1 });
+    const formattedGroups = groups.map((group) => ({
+      _id: group._id,
+      groupName: group.groupName,
+      groupImage: group.groupImage || null,
+      members: group.members || [],
+      admin: group.admin,
+      lastMessage: group.lastMessage || "No messages yet",
+    }));
+
+    return res.status(200).json({ success: true, groups: formattedGroups });
+
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
-
   }
 };
