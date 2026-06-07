@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
 import { getChatMessages, sendMessage } from "../../../hooks/useMessage";
-import { user } from "../../../hooks/useAuth";
+import { userI } from "../../../hooks/useAuth";
 
 const Chat = () => {
     const { chatId, name } = useLocalSearchParams();
@@ -18,15 +18,18 @@ const Chat = () => {
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
 
-    const loadMessages = async () => {
-        const res = await getChatMessages(chatId);
-        if (res?.messages) {
-            setMessages(res.messages);
-            const response = await user(res.messages[0].deliveredTo[0]);
-            console.log(response);
-            console.log(res.messages);
+   const loadMessages = async () => {
+    const res = await getChatMessages(chatId);
+    if (res?.messages?.length > 0) {
+        setMessages(res.messages);
+        const userId = res.messages[0]?.deliveredTo?.[0];
+        if (userId) {
+            const response = await userI(userId);
+            console.log(response.user);
         }
-    };
+        console.log(res.messages);
+    }
+};
 
     const send = async () => {
         if (!message.trim()) return;

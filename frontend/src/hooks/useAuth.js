@@ -58,7 +58,7 @@ export const logout = async () => {
     }
 }
 
-export const user = async (userId) => {
+export const userI = async (userId) => {
     try {
         const response = await axios.get(`${API_URL}/auth/user-id/${userId}`);
         return response.data;
