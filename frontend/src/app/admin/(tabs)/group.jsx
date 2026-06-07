@@ -45,7 +45,7 @@ export default function Groups() {
                     <Text style={styles.groupName}>{item.groupName}</Text>
                     <Text style={styles.groupMeta}>{item.members?.length || 0} Members</Text>
                     <Text style={styles.lastActivity}>Admin: {item.admin?.name}</Text>
-                    <Text style={styles.lastActivity}>{item.lastMessage || "No messages yet"}</Text>
+                    <Text style={styles.lastActivity}>Last Message: {item.lastMessage || "No messages yet"}</Text>
                 </View>
             </View>
 
