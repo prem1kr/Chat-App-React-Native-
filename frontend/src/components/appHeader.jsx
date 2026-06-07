@@ -1,12 +1,11 @@
-import React, { useEffect, useReducer, useState } from "react";
+import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSelector } from "react-redux";
+import { Ionicons } from "@expo/vector-icons";
 
-const AppHeader = ({ onSearchPress, title = "P Chat", children }) => {
-    const user = useSelector(state => state.user.user || []);
+const AppHeader = ({ title = "P Chat", children, isAdmin = false, onMenuPress, onMembers }) => {
+    const user = useSelector((state) => state.user.user);
 
     const getInitials = (name) => {
         if (!name) return "U";
@@ -19,12 +18,17 @@ const AppHeader = ({ onSearchPress, title = "P Chat", children }) => {
             {children}
             <Text style={styles.logo}>{title}</Text>
 
-            <View style={styles.right}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}> {getInitials(user?.name)}  </Text>
-                </View>
-            </View>
-
+            {isAdmin ? (
+                <TouchableOpacity onPress={onMenuPress}>
+                    <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity style={styles.right} onPress={onMembers} >
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
+                    </View>
+                </TouchableOpacity>
+            )}
         </LinearGradient>
     );
 };
@@ -37,27 +41,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
         borderBottomLeftRadius: 22,
-        borderBottomRightRadius: 22,
+        borderTopRightRadius: 22,
         elevation: 10,
-        shadowColor: "#7b5cff",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
     },
 
     logo: {
+        flex: 1,
         fontSize: 24,
         fontWeight: "800",
         color: "#fff",
-        letterSpacing: 0.5,
+        marginLeft: 15,
     },
 
     right: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
+        marginLeft: "auto",
     },
 
     avatar: {

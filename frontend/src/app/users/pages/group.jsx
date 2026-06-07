@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getGroupById, addMember, removeMember, updateGroup, deleteGroup } from "@/hooks/useGroup";
@@ -9,6 +9,7 @@ import AppHeader from "../../../components/appHeader";
 import { Ionicons } from "@expo/vector-icons";
 import GroupModal from "../../../components/groupModal";
 import { getAlluser } from "../../../hooks/useAuth";
+import MembersModal from "../../../components/memebersModal";
 
 export default function GroupScreen() {
   const { groupId } = useLocalSearchParams();
@@ -20,6 +21,7 @@ export default function GroupScreen() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [users, setUsers] = useState([]);
   const router = useRouter();
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const fetchAllUsers = async () => {
     const response = await getAlluser();
@@ -101,49 +103,26 @@ export default function GroupScreen() {
 
   return (
     <View style={styles.container}>
-      <AppHeader title={group?.groupName || "Group Chat"}>
+      <AppHeader title="" isAdmin={isAdmin} onMenuPress={() => setShowGroupModal(true)} onMembers={()=> setShowMembersModal(true)} >
+
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-      </AppHeader>
 
-      <View style={styles.groupCard}>
-
-        <View style={styles.groupAvatar}>
-          <Text style={styles.groupAvatarText}> {group?.groupName?.charAt(0)} </Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.groupName}> {group?.groupName}</Text>
-          <Text style={styles.memberCount}> {group?.members?.length} Members </Text>
-        </View>
-
-        {isAdmin && (
-          <TouchableOpacity onPress={() => setShowGroupModal(true)}>
-            <Ionicons name="ellipsis-vertical" size={22} color="#6B7280" />
-          </TouchableOpacity>
+        {group?.groupImage ? (
+          <Image source={{ uri: group.groupImage }} style={styles.headerAvatar} />
+        ) : (
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>{group?.groupName?.split(" ").map((n) => n[0]).join("").toUpperCase()}</Text>
+          </View>
         )}
 
-      </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerName}>{group?.groupName}</Text>
+          <Text style={styles.headerMembers}>{group?.members?.length} Members</Text>
+        </View>
 
-      <FlatList horizontal showsHorizontalScrollIndicator={false} data={group?.members || []} keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.membersContainer} renderItem={({ item }) => (
-          <TouchableOpacity style={styles.memberCard} onLongPress={() => {
-            if (
-              isAdmin && item._id !== userId
-            ) {
-              handleRemoveMember(item._id);
-            }
-          }}>
-
-            <View style={styles.memberAvatar}>
-              <Text style={styles.memberAvatarText}> {item.name?.charAt(0)} </Text>
-            </View>
-
-            <Text numberOfLines={1} style={styles.memberName}> {item.name} </Text>
-          </TouchableOpacity>
-        )} />
-
+      </AppHeader>
 
       <FlatList ref={flatListRef} data={messages} keyExtractor={(item) => item._id} renderItem={renderMessage}
         contentContainerStyle={styles.chatContainer} onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} />
@@ -158,6 +137,8 @@ export default function GroupScreen() {
       {group && (
         <GroupModal visible={showGroupModal} onClose={() => setShowGroupModal(false)} group={group} users={users} currentUserId={userId} refreshGroup={initialize} />
       )}
+
+      <MembersModal visible={showMembersModal}onClose={() => setShowMembersModal(false)} members={group?.members || []}/>
 
     </View>
   );
@@ -392,5 +373,48 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ec28d",
     justifyContent: "center",
     alignItems: "center",
+  },
+  groupAvatar: {
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    backgroundColor: "#4ec28d",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    overflow: "hidden",
+  },
+  headerAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: "hidden",
+    backgroundColor: "#4ec28d",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+
+  headerAvatarText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  headerInfo: {
+    flex: 1,
+  },
+
+  headerName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+
+  headerMembers: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  menuButton: {
+    padding: 5,
   },
 });

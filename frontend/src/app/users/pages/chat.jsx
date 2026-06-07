@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
 import { getChatMessages, sendMessage, markAsDelivered, markAsRead } from "../../../hooks/useMessage";
+import MembersModal from "../../../components/memebersModal";
 
 const Chat = () => {
     const { chatId, name } = useLocalSearchParams();
@@ -168,7 +169,7 @@ const Chat = () => {
 
     return (
         <View style={styles.container}>
-            <AppHeader title={name || "Chat"}>
+            <AppHeader title={name || "Chat"} >
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
@@ -184,8 +185,8 @@ const Chat = () => {
                         <Ionicons name="send" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
-
             </KeyboardAvoidingView>
+
         </View>
     );
 };

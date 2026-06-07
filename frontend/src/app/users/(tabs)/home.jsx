@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, StatusBar } from "react-native";
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, StatusBar, Image } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
@@ -55,7 +55,6 @@ export default function UserHome() {
         const name = getName(item);
         return name.split(" ").map((n) => n[0]).join("").toUpperCase();
     };
-
     const formatTime = (time) => {
         if (!time) return "";
         return new Date(time).toLocaleTimeString([], {
@@ -87,9 +86,13 @@ export default function UserHome() {
     const renderItem = ({ item }) => (
         <TouchableOpacity style={styles.chatCard} activeOpacity={0.85} onPress={() => openItem(item)}>
 
-            <View style={[styles.avatar, item.type === "group" && { backgroundColor: "#22c55e" }]}>
-                <Text style={styles.avatarText}> {item.type === "group" ? "👥" : getAvatar(item)}</Text>
-            </View>
+            {item.type === "group" && item.groupImage ? (
+                <Image source={{ uri: item.groupImage }} style={styles.avatar} />
+            ) : (
+                <View style={[styles.avatar, item.type === "group" && { backgroundColor: "#22c55e" }]} >
+                    <Text style={styles.avatarText}> {item.type === "group" ? getAvatar(item) : getAvatar(item)}   </Text>
+                </View>
+            )}
 
             <View style={styles.chatInfo}>
                 <View style={styles.row}>
@@ -109,7 +112,7 @@ export default function UserHome() {
     return (
         <>
             <StatusBar backgroundColor="#4facfe" barStyle="light-content" />
-            <AppHeader />
+            <AppHeader  title="P-Chat"/>
 
             <View style={styles.container}>
 
@@ -208,5 +211,15 @@ const styles = StyleSheet.create({
         marginRight: 10,
         fontSize: 14,
         color: "#64748b",
+    },
+    avatar: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: "#7b5cff",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 14,
+        overflow: "hidden",
     },
 });

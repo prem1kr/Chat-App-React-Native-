@@ -3,17 +3,27 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, A
 import { Ionicons } from "@expo/vector-icons";
 import { addMember, removeMember, updateGroup, deleteGroup } from "../hooks/useGroup";
 import { useRouter } from "expo-router";
+import LoadingButton from "./loadingButton";
 
 export default function GroupModal({ visible, onClose, group, users = [], currentUserId, refreshGroup }) {
     const [groupName, setGroupName] = useState(group?.groupName || "");
     const isAdmin = group?.admin?._id === currentUserId;
     const router = useRouter();
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const handleUpdateGroup = async () => {
-        const res = await updateGroup(group._id, { groupName });
-        if (res?.success) {
-            refreshGroup();
-            onClose();
+        try {
+            setUpdateLoading(true);
+            const res = await updateGroup(group._id, { groupName });
+            if (res?.success) {
+                refreshGroup();
+                onClose();
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setUpdateLoading(false);
         }
     };
 
@@ -37,12 +47,19 @@ export default function GroupModal({ visible, onClose, group, users = [], curren
 
 
     const handleDeleteGroup = async () => {
-        const res = await deleteGroup(group?._id);
+        try {
+            setDeleteLoading(true);
+            const res = await deleteGroup(group?._id);
             console.log("DELETE GROUP RESPONSE:", res);
-        if (res?.success) {
-            router.push('/users/home');
-            refreshGroup();
-            onClose();
+            if (res?.success) {
+                router.push('/users/home');
+                refreshGroup();
+                onClose();
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -53,136 +70,208 @@ export default function GroupModal({ visible, onClose, group, users = [], curren
 
 
     return (
-        <Modal visible={visible} transparent animationType="slide">
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={styles.overlay}>
-                <View style={styles.container}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.dragHandle} />
 
                     <View style={styles.header}>
                         <Text style={styles.title}>Group Settings</Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <Ionicons name="close" size={24} />
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                            <Ionicons name="close" size={22} color="#64748b" />
                         </TouchableOpacity>
                     </View>
 
-                    {isAdmin && (
+                    <FlatList showsVerticalScrollIndicator={false} ListHeaderComponent={
                         <>
-                            <Text style={styles.sectionTitle}>Edit Group</Text>
-                            <TextInput value={groupName} onChangeText={setGroupName} placeholder="Group Name" style={styles.input} />
-                            <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateGroup}>
-                                <Text style={styles.btnText}>Save Changes</Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
+                            {isAdmin && (
+                                <>
+                                    <Text style={styles.sectionTitle}>Edit Group</Text>
+                                    <TextInput value={groupName} onChangeText={setGroupName} placeholder="Enter group name" style={styles.input} />
+                                    <LoadingButton style={styles.primaryBtn} onPress={handleUpdateGroup} title="Save " loading={updateLoading} />
 
-                    <Text style={styles.sectionTitle}>Members</Text>
-                    <FlatList data={group?.members || []} keyExtractor={(item) => item._id} renderItem={({ item }) => (
-                        <View style={styles.memberRow}>
-                            <Text>{item.name}</Text>
-                            {isAdmin && item._id !== currentUserId && (
-                                <TouchableOpacity onPress={() => handleRemoveMember(item._id)}>
-                                    <Ionicons name="trash" size={20} color="red" />
-                                </TouchableOpacity>
+                                </>
                             )}
-                        </View>
-                    )} />
 
-                    {isAdmin && (
-                        <>
-                            <Text style={styles.sectionTitle}>Add Members</Text>
-                            <FlatList data={availableUsers} keyExtractor={(item) => item._id} renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.memberRow} onPress={() => handleAddMember(item._id)}>
-                                    <Text>{item.name}</Text>
-                                    <Ionicons name="person-add" size={20} color="#4facfe" />
-                                </TouchableOpacity>
-                            )} />
+                            <Text style={styles.sectionTitle}>Members ({group?.members?.length || 0})</Text>
                         </>
-                    )}
+                    } data={group?.members || []} keyExtractor={(item) => item._id} renderItem={({ item }) => (
+                        <View style={styles.memberCard}>
+                            <View style={styles.memberLeft}>
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase()}</Text>
+                                </View>
+                                <Text style={styles.memberName}>{item.name}</Text>
+                            </View>
 
-                    {isAdmin && (
-                        <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteGroup}>
-                            <Ionicons name="trash" size={20} color="#fff" />
-                            <Text style={styles.btnText}>Delete Group</Text>
-                        </TouchableOpacity>
+                            {isAdmin &&
+                                item._id !== currentUserId && (
+                                    <TouchableOpacity onPress={() => handleRemoveMember(item._id)}>
+                                        <Ionicons name="trash-outline" size={22} color="#ef4444" />
+                                    </TouchableOpacity>
+                                )}
+                        </View>
                     )}
+                        ListFooterComponent={
+                            <>
+                                {isAdmin && (
+                                    <>
+                                        <Text style={styles.sectionTitle}>Add Members</Text>
 
+                                        {availableUsers.map((item) => (
+                                            <TouchableOpacity key={item._id} style={styles.memberCard} onPress={() => handleAddMember(item._id)}>
+                                                <View style={styles.memberLeft}>
+                                                    <View style={[styles.avatar, { backgroundColor: "#4facfe" }]}>
+                                                        <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase()}</Text>
+                                                    </View>
+                                                    <Text style={styles.memberName}>{item.name}</Text>
+                                                </View>
+                                                <Ionicons name="person-add" size={22} color="#4facfe" />
+                                            </TouchableOpacity>
+                                        ))}
+
+                                        <LoadingButton style={styles.deleteBtn} onPress={handleDeleteGroup} loading={deleteLoading} title={"Delete Group"} />
+
+                                    </>
+                                )}
+                            </>
+                        } />
                 </View>
             </View>
         </Modal>
     );
 }
+
+
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        justifyContent: "center",
-        padding: 20,
+        backgroundColor: "rgba(15,23,42,0.55)",
+        justifyContent: "flex-end",
     },
 
-    container: {
+    modalContainer: {
         backgroundColor: "#fff",
-        borderRadius: 20,
-        padding: 20,
-        maxHeight: "90%",
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: 20,
+        paddingBottom: 30,
+        paddingTop: 12,
+        maxHeight: "88%",
+    },
+
+    dragHandle: {
+        width: 50,
+        height: 5,
+        backgroundColor: "#CBD5E1",
+        borderRadius: 50,
+        alignSelf: "center",
+        marginBottom: 15,
     },
 
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 15,
+        marginBottom: 10,
     },
 
     title: {
-        fontSize: 20,
-        fontWeight: "700",
+        fontSize: 24,
+        fontWeight: "800",
+        color: "#111827",
+    },
+
+    closeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#F1F5F9",
+        justifyContent: "center",
+        alignItems: "center",
     },
 
     sectionTitle: {
-        marginTop: 15,
-        marginBottom: 8,
+        fontSize: 16,
         fontWeight: "700",
-        fontSize: 15,
+        color: "#475569",
+        marginTop: 20,
+        marginBottom: 10,
     },
 
     input: {
+        height: 55,
+        backgroundColor: "#F8FAFC",
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        fontSize: 15,
         borderWidth: 1,
-        borderColor: "#ddd",
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        height: 50,
-    },
-
-    memberRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor:
-            "#f1f5f9",
+        borderColor: "#E2E8F0",
     },
 
     primaryBtn: {
+        marginTop: 12,
         backgroundColor: "#4facfe",
-        padding: 12,
-        borderRadius: 10,
-        marginTop: 10,
-        alignItems: "center",
-    },
-
-    deleteBtn: {
-        backgroundColor: "#ef4444",
-        padding: 14,
-        borderRadius: 12,
-        marginTop: 20,
-        flexDirection: "row",
+        height: 52,
+        borderRadius: 16,
         justifyContent: "center",
         alignItems: "center",
-        gap: 10,
+        flexDirection: "row",
+        gap: 8,
     },
 
     btnText: {
         color: "#fff",
         fontWeight: "700",
+        fontSize: 15,
+    },
+
+    memberCard: {
+        backgroundColor: "#F8FAFC",
+        borderRadius: 18,
+        padding: 14,
+        marginBottom: 10,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+
+    memberLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+
+    avatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: "#22c55e",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 12,
+    },
+
+    avatarText: {
+        color: "#fff",
+        fontWeight: "700",
+        fontSize: 16,
+    },
+
+    memberName: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#111827",
+    },
+
+    deleteBtn: {
+        marginTop: 20,
+        backgroundColor: "#ef4444",
+        height: 55,
+        borderRadius: 16,
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "row",
+        gap: 10,
+        marginBottom: 20,
     },
 });
