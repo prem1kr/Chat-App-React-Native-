@@ -19,17 +19,14 @@ export const createOrGetChat = async (req, res) => {
       });
 
       chat = await chatModel.findById(chat._id).populate("participants", "name email profilePic isOnline");
-
+      
       const payload = { chat, type: "chat_created" };
-
       io.to(receiverId.toString()).emit("chatCreated", payload);
       io.to(userId.toString()).emit("chatCreated", payload);
-
       return res.status(201).json({ success: true, message: "Chat created successfully", chat });
     }
 
     chat = await chatModel.findById(chat._id).populate("participants", "name email profilePic isOnline");
-
     return res.status(200).json({ success: true, message: "Chat already exists", chat });
 
   } catch (error) {

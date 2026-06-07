@@ -17,7 +17,6 @@ export default function UserHome() {
             const [chatRes, groupRes] = await Promise.all([getChatList(), getUserGroups()]);
             const chats = chatRes?.chats?.map((chat) => ({ ...chat, type: "chat" })) || [];
             const groups = groupRes?.groups?.map((group) => ({ ...group, type: "group" })) || [];
-
             const merged = [...chats, ...groups].sort((a, b) =>
                 new Date(b.lastMessageTime || b.updatedAt) -
                 new Date(a.lastMessageTime || a.updatedAt)
@@ -34,11 +33,14 @@ export default function UserHome() {
         socket.on("groupCreated", loadData);
         socket.on("groupUpdated", loadData);
         socket.on("groupDeleted", loadData);
+        socket.on("newMessage", loadData);
         return () => {
             socket.off("chatCreated", loadData);
             socket.off("groupCreated", loadData);
             socket.off("groupUpdated", loadData);
             socket.off("groupDeleted", loadData);
+            socket.off("newMessage", loadData);
+
         };
     }, []);
 

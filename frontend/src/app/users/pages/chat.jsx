@@ -5,39 +5,43 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
-import { getChatMessages, sendMessage } from "../../../hooks/useMessage";
-import { userI } from "../../../hooks/useAuth";
+import { getChatMessages, sendMessage, markAsDelivered, markAsRead } from "../../../hooks/useMessage";
 
 const Chat = () => {
     const { chatId, name } = useLocalSearchParams();
     const flatListRef = useRef(null);
     const router = useRouter();
     const user = useSelector((state) => state.user.user || {});
-    const userName = user?.name;
     const userId = user?._id;
+    const userName = user?.name;
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
 
-   const loadMessages = async () => {
-    const res = await getChatMessages(chatId);
-    if (res?.messages?.length > 0) {
-        setMessages(res.messages);
-        const userId = res.messages[0]?.deliveredTo?.[0];
-        if (userId) {
-            const response = await userI(userId);
-            console.log(response.user);
+    const loadMessages = async () => {
+        const res = await getChatMessages(chatId);
+
+        if (res?.messages) {
+            setMessages(res.messages);
+            for (const msg of res.messages) {
+                if (
+                    msg.sender?._id !== userId && !msg.deliveredTo?.includes(userId)
+                ) {
+                    await markAsDelivered(msg._id);
+                }
+            }
         }
-        console.log(res.messages);
-    }
-};
+    };
 
     const send = async () => {
         if (!message.trim()) return;
+
         const tempMsg = {
             _id: Date.now().toString(),
             text: message,
-            sender: { name: userName, _id: userId },
+            sender: { _id: userId, name: userName },
             createdAt: new Date(),
+            deliveredTo: [],
+            readBy: [],
         };
 
         setMessages((prev) => [...prev, tempMsg]);
@@ -48,6 +52,7 @@ const Chat = () => {
             text: message,
             messageType: "text",
         });
+
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -56,23 +61,86 @@ const Chat = () => {
     useEffect(() => {
         loadMessages();
         socket.emit("joinChat", chatId);
-        socket.on("newMessage", (msg) => {
+
+        socket.on("newMessage", async (msg) => {
             if (msg.chatId === chatId) {
                 setMessages((prev) => [...prev, msg]);
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+
+                if (msg.sender?._id !== userId) {
+                    await markAsDelivered(msg._id);
+                }
             }
         });
+
         socket.on("messageDeleted", ({ messageId }) => {
-            setMessages((prev) => prev.filter((m) => m._id !== messageId));
+            setMessages((prev) =>
+                prev.filter((msg) => msg._id !== messageId)
+            );
         });
-        socket.on("messageRead", () => {
-            // optional UI update
+
+        socket.on("messageDelivered", ({ messageId, userId }) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === messageId ? {
+                        ...msg, deliveredTo: [...new Set([...(msg.deliveredTo || []), userId]),
+                        ],
+                    } : msg
+                )
+            );
         });
+
+        socket.on("messageRead", ({ messageId, userId }) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === messageId ? {
+                        ...msg, readBy: [...new Set([...(msg.readBy || []), userId]),
+                        ],
+                    } : msg
+                )
+            );
+        });
+
         return () => {
             socket.off("newMessage");
             socket.off("messageDeleted");
+            socket.off("messageDelivered");
             socket.off("messageRead");
         };
-    }, [chatId]);
+    }, [chatId, userId]);
+
+    useEffect(() => {
+        if (!messages.length) return;
+
+        const markMessagesRead = async () => {
+            for (const msg of messages) {
+                if (
+                    msg.sender?._id !== userId &&
+                    !msg.readBy?.includes(userId)
+                ) {
+                    await markAsRead(msg._id);
+                }
+            }
+        };
+
+        markMessagesRead();
+    }, [messages, userId]);
+
+
+    const renderMessageStatus = (item) => {
+        if (item.sender?._id !== userId) return null;
+        const isRead = item.readBy?.length > 0 && item.readBy.some((id) => id !== userId);
+        const isDelivered = item.deliveredTo?.length > 0 && item.deliveredTo.some((id) => id !== userId);
+        if (isRead) {
+            return (<Ionicons name="checkmark-done" size={16} color="#3b82f6" />);
+        }
+        if (isDelivered) {
+            return (<Ionicons name="checkmark-done" size={16} color="#9CA3AF" />);
+        }
+        return (<Ionicons name="checkmark" size={16} color="#9CA3AF" />);
+    };
 
     const renderItem = ({ item }) => {
         const isMyMessage = item.sender?._id === userId;
@@ -84,14 +152,23 @@ const Chat = () => {
                     <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]}> {item.text} </Text>
                 </View>
 
-                <Text style={styles.timeText}> {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </Text>
+                <View style={styles.timeRow}>
+                    <Text style={styles.timeText}>
+                        {new Date(item.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })}
+                    </Text>
+
+                    {renderMessageStatus(item)}
+                </View>
             </View>
         );
     };
 
     return (
         <View style={styles.container}>
-            <AppHeader title={userName || "Chat"}>
+            <AppHeader title={name || "Chat"}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
@@ -229,6 +306,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#4ec28d',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    timeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        marginTop: 5,
+        marginHorizontal: 6,
+    },
+
+    timeText: {
+        fontSize: 11,
+        color: "#9CA3AF",
     },
 
 });
