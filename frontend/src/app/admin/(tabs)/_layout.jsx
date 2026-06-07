@@ -20,7 +20,7 @@ const tabs = [
   {
     name: "chat",
     label: "Chats",
-    icon: "message",
+    icon: "chatbubble-outline",
     activeIcon: "people",
   },
   {
@@ -40,44 +40,20 @@ function TabItem({ tab, focused, navigation }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.spring(scale, {
-      toValue: focused ? 1.1 : 1,
-      friction: 5,
-      tension: 100,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: focused ? 1.1 : 1, friction: 5, tension: 100, useNativeDriver: true, }).start();
   }, [focused]);
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => navigation.navigate(tab.name)}
-    >
+    <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate(tab.name)}>
       <Animated.View style={{ transform: [{ scale }] }}>
         {focused ? (
-          <LinearGradient
-            colors={["#4facfe", "#7b5cff"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.activeTab}
-          >
-            <Ionicons
-              name={tab.activeIcon}
-              size={20}
-              color="#fff"
-            />
-
-            <Text style={styles.activeText}>
-              {tab.label}
-            </Text>
+          <LinearGradient colors={["#4facfe", "#7b5cff"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.activeTab}  >
+            <Ionicons name={tab.activeIcon} size={20} color="#fff" />
+            <Text style={styles.activeText}>{tab.label}</Text>
           </LinearGradient>
         ) : (
           <View style={styles.inactiveTab}>
-            <Ionicons
-              name={tab.icon}
-              size={22}
-              color="#64748b"
-            />
+            <Ionicons name={tab.icon} size={22} color="#64748b" />
           </View>
         )}
       </Animated.View>

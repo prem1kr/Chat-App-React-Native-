@@ -19,6 +19,7 @@ export default function Dashboard() {
 
     const [recentUsers, setRecentUsers] = useState([]);
     const [recentGroups, setRecentGroups] = useState([]);
+    const [recentChats, setRecentChats] = useState([]);
 
     const loadDashboard = async () => {
         try {
@@ -27,7 +28,7 @@ export default function Dashboard() {
             const users = usersRes?.users || [];
             const chats = chatsRes?.chats || [];
             const groups = groupsRes?.groups || [];
-         
+
             setCurrentUser(userRes?.user);
 
             setStats({
@@ -41,6 +42,7 @@ export default function Dashboard() {
 
             setRecentUsers(users.slice(0, 5));
             setRecentGroups(groups.slice(0, 5));
+            setRecentChats(chats.slice(0, 5));
         } catch (error) {
             console.log(error);
         } finally {
@@ -60,18 +62,6 @@ export default function Dashboard() {
                 <LinearGradient colors={["#4facfe", "#7b5cff"]} style={styles.header}>
                     <Text style={styles.welcome}>Welcome Back 👋</Text>
                     <Text style={styles.adminName}>{currentUser?.name || "Admin"}</Text>
-
-                    <View style={styles.headerStats}>
-                        <View style={styles.smallCard}>
-                            <Text style={styles.smallNumber}>{stats.users}</Text>
-                            <Text style={styles.smallLabel}>Users</Text>
-                        </View>
-
-                        <View style={styles.smallCard}>
-                            <Text style={styles.smallNumber}>{stats.groups}</Text>
-                            <Text style={styles.smallLabel}>Groups</Text>
-                        </View>
-                    </View>
                 </LinearGradient>
 
                 <View style={styles.statsContainer}>
@@ -102,7 +92,7 @@ export default function Dashboard() {
                     </View>
                 </View>
 
-                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                {/* <Text style={styles.sectionTitle}>Quick Actions</Text>
 
                 <View style={styles.actionGrid}>
                     <TouchableOpacity style={styles.actionCard}>
@@ -124,7 +114,7 @@ export default function Dashboard() {
                         <Ionicons name="settings" size={28} color="#7b5cff" />
                         <Text style={styles.actionText}>Settings</Text>
                     </TouchableOpacity>
-                </View>
+                </View> */}
 
                 <Text style={styles.sectionTitle}>Recent Users</Text>
 
@@ -144,6 +134,30 @@ export default function Dashboard() {
                         <Ionicons name={user.isOnline ? "radio" : "ellipse-outline"} size={16} color={user.isOnline ? "#22c55e" : "#94a3b8"} />
                     </View>
                 ))}
+
+
+                <Text style={styles.sectionTitle}>Recent Chats</Text>
+
+                {recentChats.map((chat) => {
+                    const user = chat.participants?.[0];
+
+                    return (
+                        <View key={chat._id} style={styles.userCard}>
+
+                            <View style={styles.userLeft}>
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || "C"}</Text>
+                                </View>
+                                <View style={styles.userInfo}>
+                                    <Text style={styles.userName}>{user?.name || "Unknown User"}</Text>
+                                    <Text style={styles.userEmail}>{chat.lastMessage || "No messages yet"}</Text>
+                                </View>
+                            </View>
+
+                            <Ionicons name={user?.isOnline ? "radio" : "ellipse-outline"} size={16} color={user?.isOnline ? "#22c55e" : "#94a3b8"} />
+                        </View>
+                    );
+                })}
 
                 <Text style={styles.sectionTitle}>Recent Groups</Text>
                 {recentGroups.map((group) => (
@@ -205,7 +219,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 10,
         paddingBottom: 30,
-        borderBottomLeftRadius: 30,
+        borderTopLeftRadius: 30,
         borderBottomRightRadius: 30,
         marginHorizontal: 10,
     },

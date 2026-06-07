@@ -1,14 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-    View,
-    Text,
-    FlatList,
-    TextInput,
-    ActivityIndicator,
-    Image,
-    StyleSheet,
-    TouchableOpacity,
-} from "react-native";
+import { View, Text, FlatList, TextInput, ActivityIndicator, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAllChats } from "../../../hooks/useChat";
@@ -42,16 +33,10 @@ export default function Chats() {
     );
 
     const getAvatar = (name) => {
-        return name
-            ?.split(" ")
-            .map((n) => n[0])
-            .join("")
-            .substring(0, 2)
-            .toUpperCase();
+        return name?.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
     };
 
     const getChatName = (item) => {
-        // assuming 1-to-1 chat
         return item.participants?.[0]?.name || "Unknown";
     };
 
@@ -62,33 +47,21 @@ export default function Chats() {
             <TouchableOpacity style={styles.chatCard}>
                 <View style={styles.left}>
                     {user?.profilePic ? (
-                        <Image
-                            source={{ uri: user.profilePic }}
-                            style={styles.avatar}
-                        />
+                        <Image source={{ uri: user.profilePic }} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
-                                {getAvatar(user?.name)}
-                            </Text>
+                            <Text style={styles.avatarText}>{getAvatar(user?.name)}</Text>
                         </View>
                     )}
 
                     <View style={styles.info}>
-                        <Text style={styles.name}>
-                            {user?.name || "Unknown User"}
-                        </Text>
-
-                        <Text style={styles.lastMessage}>
-                            {item.lastMessage || "No messages yet"}
-                        </Text>
+                        <Text style={styles.name}>{user?.name || "Unknown User"}</Text>
+                        <Text style={styles.lastMessage}>Last Message: {item.lastMessage || "No messages yet"}</Text>
                     </View>
                 </View>
 
                 <View style={styles.right}>
-                    {user?.isOnline && (
-                        <View style={styles.onlineDot} />
-                    )}
+                    {user?.isOnline && (<View style={styles.onlineDot} />)}
                     <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
                 </View>
             </TouchableOpacity>
@@ -101,32 +74,20 @@ export default function Chats() {
 
             <View style={styles.container}>
                 <View style={styles.headerCard}>
-                    <Text style={styles.title}>Your Chats</Text>
-                    <Text style={styles.subtitle}>
-                        Total Chats: {chats.length}
-                    </Text>
+                    <Text style={styles.title}> Chats Management</Text>
+                    <Text style={styles.subtitle}>Total Chats: {chats.length}</Text>
                 </View>
 
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <TextInput
-                        placeholder="Search users..."
-                        value={search}
-                        onChangeText={setSearch}
-                        style={styles.input}
-                    />
+                    <TextInput placeholder="Search users..." value={search} onChangeText={setSearch} style={styles.input} />
                 </View>
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#4facfe" />
                 ) : (
-                    <FlatList
-                        data={filteredChats}
-                        keyExtractor={(item) => item._id}
-                        renderItem={renderItem}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 120 }}
-                    />
+                    <FlatList data={filteredChats} keyExtractor={(item) => item._id} renderItem={renderItem} showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 120 }} />
                 )}
             </View>
         </>
