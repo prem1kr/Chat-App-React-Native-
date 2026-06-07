@@ -1,62 +1,122 @@
-import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, StatusBar } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
-
-const dummyChats = [
-    {
-        id: "1",
-        name: "Prem Kumar",
-        lastMessage: "Bro where are you?",
-        time: "2:10 PM",
-        unread: 2,
-    },
-    {
-        id: "2",
-        name: "Rahul Sharma",
-        lastMessage: "Let’s meet tomorrow",
-        time: "1:05 PM",
-        unread: 0,
-    },
-    {
-        id: "3",
-        name: "Anjali",
-        lastMessage: "Ok got it 👍",
-        time: "Yesterday",
-        unread: 5,
-    },
-];
+import { socket } from "@/socket/socket";
+import { getChatList } from "../../../hooks/useChat";
+import { useRouter } from "expo-router";
 
 export default function UserHome() {
+    const router = useRouter();
+
+    const [chats, setChats] = useState([]);
     const [search, setSearch] = useState("");
 
-    const filteredChats = dummyChats.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase())
-    );
-
-    const getInitials = (name) => {
-        return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+    /* ---------------- LOAD CHATS ---------------- */
+    const loadChats = async () => {
+        const res = await getChatList();
+        if (res?.chats) setChats(res.chats);
     };
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity style={styles.chatCard} activeOpacity={0.85}>
+    /* ---------------- FORMAT TIME ---------------- */
+    const formatTime = (time) => {
+        if (!time) return "";
+        return new Date(time).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 
+    /* ---------------- GET CHAT NAME ---------------- */
+    const getChatName = (chat) => {
+        const user = chat?.participants?.[0];
+        return user?.name || "Unknown";
+    };
+
+    const getChatAvatar = (chat) => {
+        const name = getChatName(chat);
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase();
+    };
+
+    /* ---------------- SOCKET HANDLERS ---------------- */
+    useEffect(() => {
+        loadChats();
+
+        const onChatCreated = (payload) => {
+            setChats((prev) => [payload.chat, ...prev]);
+        };
+
+        const onNewMessage = (message) => {
+            setChats((prev) =>
+                prev.map((chat) =>
+                    chat._id === message.chatId
+                        ? {
+                            ...chat,
+                            lastMessage: message.text,
+                            lastMessageTime: message.createdAt,
+                        }
+                        : chat
+                )
+            );
+        };
+
+        socket.on("chatCreated", onChatCreated);
+        socket.on("newMessage", onNewMessage);
+
+        return () => {
+            socket.off("chatCreated", onChatCreated);
+            socket.off("newMessage", onNewMessage);
+        };
+    }, []);
+
+    /* ---------------- SEARCH FILTER ---------------- */
+    const filteredChats = chats.filter((item) => {
+        const name = getChatName(item).toLowerCase();
+        return name.includes(search.toLowerCase());
+    });
+
+    /* ---------------- CHAT OPEN ---------------- */
+    const openChat = useCallback(
+        (chatId) => {
+            router.push(`/users/pages/chat/${chatId}`);
+        },
+        [router]
+    );
+
+    /* ---------------- RENDER ITEM ---------------- */
+    const renderItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.chatCard}
+            activeOpacity={0.85}
+            onPress={() => openChat(item._id)}
+        >
             <View style={styles.avatar}>
-                <Text style={styles.avatarText}> {getInitials(item.name)} </Text>
+                <Text style={styles.avatarText}>{getChatAvatar(item)}</Text>
                 <View style={styles.onlineDot} />
             </View>
 
             <View style={styles.chatInfo}>
                 <View style={styles.row}>
-                    <Text style={styles.name}> {item.name} </Text>
-                    <Text style={styles.time}> {item.time} </Text>
+                    <Text style={styles.name}>{getChatName(item)}</Text>
+                    <Text style={styles.time}>
+                        {formatTime(item.lastMessageTime)}
+                    </Text>
                 </View>
 
                 <View style={styles.row}>
-                    <Text style={styles.message} numberOfLines={1}>{item.lastMessage} </Text>
-                    {item.unread > 0 && (
+                    <Text style={styles.message} numberOfLines={1}>
+                        {item.lastMessage || "No messages yet"}
+                    </Text>
+
+                    {!!item.unreadCount && item.unreadCount > 0 && (
                         <View style={styles.badge}>
-                            <Text style={styles.badgeText}> {item.unread}</Text>
+                            <Text style={styles.badgeText}>
+                                {item.unreadCount}
+                            </Text>
                         </View>
                     )}
                 </View>
@@ -67,16 +127,29 @@ export default function UserHome() {
     return (
         <>
             <StatusBar backgroundColor="#4facfe" barStyle="light-content" />
-            <AppHeader  />
+            <AppHeader />
 
             <View style={styles.container}>
-
+                {/* SEARCH */}
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20}  color="#94a3b8"/>
-                    <TextInput placeholder="Search chats..." placeholderTextColor="#94a3b8"  value={search} onChangeText={setSearch} style={styles.searchInput} />
+                    <Ionicons name="search" size={20} color="#94a3b8" />
+                    <TextInput
+                        placeholder="Search chats..."
+                        placeholderTextColor="#94a3b8"
+                        value={search}
+                        onChangeText={setSearch}
+                        style={styles.searchInput}
+                    />
                 </View>
 
-                <FlatList data={filteredChats} keyExtractor={(item) => item.id} renderItem={renderItem} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}/>
+                {/* CHAT LIST */}
+                <FlatList
+                    data={filteredChats}
+                    keyExtractor={(item) => item._id}
+                    renderItem={renderItem}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 120 }}
+                />
             </View>
         </>
     );
@@ -122,7 +195,7 @@ const styles = StyleSheet.create({
         borderColor: "#eef2ff",
         elevation: 4,
         shadowColor: "#7b5cff",
-        shadowOffset: { width: 0, height: 3},
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.08,
         shadowRadius: 6,
     },

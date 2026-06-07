@@ -1,74 +1,160 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform } from "react-native";
-import React, { useRef, useState } from "react";
+import {
+    StyleSheet, Text, View, TouchableOpacity,
+    FlatList, TextInput, KeyboardAvoidingView, Platform
+} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
-import { useLocalSearchParams } from "expo-router";
+
+import { socket } from "@/socket/socket";
+import { getChatMessages, sendMessage } from "../../../hooks/useMessage";
 
 const Chat = () => {
-    const { userId, name } = useLocalSearchParams();
+    const { chatId, name } = useLocalSearchParams();
+
     const flatListRef = useRef(null);
     const router = useRouter();
+
     const user = useSelector((state) => state.user.user || {});
     const userName = user?.name;
+    const userId = user?._id;
+
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
 
-    // SEND MESSAGE (LOCAL ONLY)
-    const sendMessage = () => {
+    // ✅ LOAD MESSAGES
+    const loadMessages = async () => {
+        const res = await getChatMessages(chatId);
+        if (res?.messages) {
+            setMessages(res.messages);
+        }
+    };
+
+    // ✅ SEND MESSAGE
+    const send = async () => {
         if (!message.trim()) return;
 
-        const msgData = {
-            id: Date.now().toString(),
+        const tempMsg = {
+            _id: Date.now().toString(),
             text: message,
-            sender: userName,
-            ts: Date.now(),
+            sender: { name: userName, _id: userId },
+            createdAt: new Date(),
         };
 
-        setMessages((prev) => [...prev, msgData]);
+        setMessages((prev) => [...prev, tempMsg]);
         setMessage("");
+
+        await sendMessage({
+            chatId,
+            text: message,
+            messageType: "text",
+        });
 
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
     };
 
+    // ✅ SOCKET EVENTS
+    useEffect(() => {
+        loadMessages();
+
+        socket.emit("joinChat", chatId);
+
+        socket.on("newMessage", (msg) => {
+            if (msg.chatId === chatId) {
+                setMessages((prev) => [...prev, msg]);
+            }
+        });
+
+        socket.on("messageDeleted", ({ messageId }) => {
+            setMessages((prev) => prev.filter((m) => m._id !== messageId));
+        });
+
+        socket.on("messageRead", () => {
+            // optional UI update
+        });
+
+        return () => {
+            socket.off("newMessage");
+            socket.off("messageDeleted");
+            socket.off("messageRead");
+        };
+    }, [chatId]);
+
+    // ✅ RENDER MESSAGE
     const renderItem = ({ item }) => {
-        const isMyMessage = item.sender === userName;
+        const isMyMessage = item.sender?._id === userId;
 
         return (
-            <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
-                <Text style={styles.senderName}> {isMyMessage ? "You" : item.sender} </Text>
+            <View style={[
+                styles.messageWrapper,
+                isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper
+            ]}>
+                <Text style={styles.senderName}>
+                    {isMyMessage ? "You" : item.sender?.name}
+                </Text>
 
-                <View style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
-                    <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]} >{item.text}</Text>
+                <View style={[
+                    styles.messageContainer,
+                    isMyMessage ? styles.sent : styles.received
+                ]}>
+                    <Text style={[
+                        styles.messageText,
+                        isMyMessage && { color: "#fff" }
+                    ]}>
+                        {item.text}
+                    </Text>
                 </View>
 
-                <Text style={styles.timeText}> {new Date(item.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </Text>
+                <Text style={styles.timeText}>
+                    {new Date(item.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    })}
+                </Text>
             </View>
         );
     };
 
     return (
         <View style={styles.container}>
-            <AppHeader title={name || "chat"}  >
+            <AppHeader title={name || "Chat"}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
             </AppHeader>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} >
-                <FlatList ref={flatListRef} data={messages} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={styles.chatContainer} showsVerticalScrollIndicator={false}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} />
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    keyExtractor={(item) => item._id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.chatContainer}
+                    onContentSizeChange={() =>
+                        flatListRef.current?.scrollToEnd({ animated: true })
+                    }
+                />
 
+                {/* INPUT */}
                 <View style={styles.inputContainer}>
-                    <TextInput placeholder="Type a message..." placeholderTextColor="#9CA3AF" value={message} onChangeText={setMessage} style={styles.input} />
-                    <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+                    <TextInput
+                        placeholder="Type a message..."
+                        value={message}
+                        onChangeText={setMessage}
+                        style={styles.input}
+                    />
+
+                    <TouchableOpacity style={styles.sendButton} onPress={send}>
                         <Ionicons name="send" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
-
             </KeyboardAvoidingView>
         </View>
     );

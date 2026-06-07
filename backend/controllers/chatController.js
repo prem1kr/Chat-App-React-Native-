@@ -10,7 +10,7 @@ export const createOrGetChat = async (req, res) => {
       return res.status(400).json({ success: false, message: "Receiver ID is required" });
     }
 
-    const chat = await chatModel.findOne({ participants: { $all: [userId, receiverId] } });
+    let chat = await chatModel.findOne({ participants: { $all: [userId, receiverId] } });
     if (!chat) {
       chat = await chatModel.create({
         participants: [userId, receiverId],

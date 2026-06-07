@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from "r
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAlluser } from "../../../hooks/useAuth";
+import { createChat } from "../../../hooks/useChat";
+import { createGroup } from "../../../hooks/useGroup";
 import { useDispatch, useSelector } from "react-redux";
 import { setUsers } from "../../../redux/slices/usersSlice";
 import { useRouter } from "expo-router";
+import { socket } from "@/socket/socket";
 
 export default function Contacts() {
     const router = useRouter();
@@ -13,61 +16,99 @@ export default function Contacts() {
     const [search, setSearch] = useState("");
     const [selectedUsers, setSelectedUsers] = useState([]);
     const Users = useSelector(state => state.users.users || []);
-    const filteredUsers = Users.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredUsers = Users.filter((user) =>
+        user.name.toLowerCase().includes(search.toLowerCase())
+    );
+    const getInitials = (name = "") =>
+        name.split(" ").map((n) => n[0]).join("").toUpperCase();
 
-    const getInitials = (name) => {
-        return name.split(" ").map((n) => n[0]).join("").toUpperCase();
-    };
-
-    const toggleUser = (item) => {
-        const id = item?._id || item?.id;
-        setSelectedUsers((prev) => {
-            if (prev.includes(id)) {
-                return prev.filter((i) => i !== id);
-            }
-            return [...prev, id];
-        });
-    };
-
-    const chatWindow = (item) => {
-        router.push({
-            pathname: '/users/pages/chat',
-            params: { userId: item?._id, name: item?.name }
-        });
-    };
+    useEffect(() => {
+        fetchAllUsers();
+    }, []);
 
     const fetchAllUsers = async () => {
         const response = await getAlluser();
         if (response.success) {
             dispatch(setUsers(response.users));
         }
-    }
+    };
 
-    useEffect(() => {
-        fetchAllUsers();
-    }, []);
+    // =========================
+    // INDIVIDUAL CHAT
+    // =========================
+    const openChat = async (user) => {
+        try {
+            const res = await createChat(user._id);
+            if (res?.chat) {
+                const chatId = res.chat._id;
+                socket.emit("joinChat", chatId);
+                router.push(`/users/pages/chat/${chatId}`);
+            }
+        } catch (err) {
+            console.log("Chat error:", err);
+        }
+    };
+
+    // =========================
+    // GROUP CHAT CREATE
+    // =========================
+    const createGroupChat = async () => {
+        try {
+            const data = {groupName: "New Group",members: selectedUsers};
+            const res = await createGroup(data);
+            if (res?.group) {
+                const groupId = res.group._id;
+                socket.emit("joinGroup", groupId);
+                setSelectedUsers([]);
+                router.push(`/users/pages/group/${groupId}`);
+            }
+        } catch (err) {
+            console.log("Group error:", err);
+        }
+    };
+
+    // =========================
+    // SELECT LOGIC
+    // =========================
+    const toggleUser = (item) => {
+        const id = item._id;
+
+        setSelectedUsers((prev) =>
+            prev.includes(id)
+                ? prev.filter((i) => i !== id)
+                : [...prev, id]
+        );
+    };
+
+    const handlePress = (item) => {
+        if (selectedUsers.length > 0) {
+            toggleUser(item);
+        } else {
+            openChat(item);
+        }
+    };
 
     const renderItem = ({ item }) => {
-        const isSelected = selectedUsers.includes(item?._id);
+        const isSelected = selectedUsers.includes(item._id);
 
         return (
-            <TouchableOpacity activeOpacity={0.85} delayLongPress={300} onLongPress={() => { toggleUser(item) }}
-                onPress={() => {
-                    if (selectedUsers.length > 0) {
-                        toggleUser(item);
-                    } else {
-                        chatWindow(item);
-                    }
-                }} style={[styles.userCard, isSelected && styles.selectedCard]} >
-
+            <TouchableOpacity
+                onLongPress={() => toggleUser(item)}
+                onPress={() => handlePress(item)}
+                style={[styles.userCard, isSelected && styles.selectedCard]}
+            >
                 <View style={styles.avatar}>
-                    <Text style={styles.avatarText}> {getInitials(item?.name)}</Text>
-                    {item?.status === "Online" && (<View style={styles.onlineDot} />)}
+                    <Text style={styles.avatarText}>
+                        {getInitials(item.name)}
+                    </Text>
+                    {item.status === "Online" && (
+                        <View style={styles.onlineDot} />
+                    )}
                 </View>
 
                 <View style={styles.userInfo}>
-                    <Text style={styles.name}>  {item?.name} </Text>
-                    <Text style={styles.status}> {item?.status}  </Text>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.status}>{item.status}</Text>
                 </View>
 
                 {selectedUsers.length > 0 ? (
@@ -92,28 +133,52 @@ export default function Contacts() {
     return (
         <>
             <AppHeader title="Contacts" />
+
             <View style={styles.container}>
 
+                {/* SEARCH */}
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <TextInput placeholder="Search users..." placeholderTextColor="#94a3b8" value={search} onChangeText={setSearch} style={styles.searchInput} />
+                    <TextInput
+                        placeholder="Search users..."
+                        placeholderTextColor="#94a3b8"
+                        value={search}
+                        onChangeText={setSearch}
+                        style={styles.searchInput}
+                    />
                 </View>
 
+                {/* SELECTED BANNER */}
                 {selectedUsers.length > 0 && (
                     <View style={styles.selectedBanner}>
-                        <Text style={styles.selectedText}> {selectedUsers.length} Selected</Text>
+                        <Text style={styles.selectedText}>
+                            {selectedUsers.length} Selected
+                        </Text>
+
                         <TouchableOpacity onPress={() => setSelectedUsers([])}>
                             <Ionicons name="close" size={22} color="#fff" />
                         </TouchableOpacity>
                     </View>
                 )}
 
-                <FlatList data={filteredUsers} keyExtractor={(item) => item?._id?.toString()} renderItem={renderItem} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }} />
+                {/* USERS */}
+                <FlatList
+                    data={filteredUsers}
+                    keyExtractor={(item) => item._id}
+                    renderItem={renderItem}
+                    contentContainerStyle={{ paddingBottom: 120 }}
+                />
 
+                {/* CREATE GROUP BUTTON */}
                 {selectedUsers.length >= 2 && (
-                    <TouchableOpacity style={styles.createGroupBtn} onPress={() => { console.log("Selected Users:", selectedUsers); }} >
+                    <TouchableOpacity
+                        style={styles.createGroupBtn}
+                        onPress={createGroupChat}
+                    >
                         <Ionicons name="people" size={20} color="#fff" />
-                        <Text style={styles.createGroupText}>  Create Group </Text>
+                        <Text style={styles.createGroupText}>
+                            Create Group
+                        </Text>
                     </TouchableOpacity>
                 )}
             </View>
