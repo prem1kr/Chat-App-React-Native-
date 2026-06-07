@@ -18,6 +18,12 @@ const tabs = [
     activeIcon: "people",
   },
   {
+    name: "chat",
+    label: "Chats",
+    icon: "message",
+    activeIcon: "people",
+  },
+  {
     name: "group",
     label: "Group",
     icon: "chatbubbles-outline",
@@ -79,71 +85,72 @@ function TabItem({ tab, focused, navigation }) {
   );
 }
 
-  function CustomTabBar({ state, navigation }) {
-    return (
-      <View style={styles.container}>
-        {tabs.map((tab, index) => (
-          <TabItem key={tab.name} tab={tab} focused={state.index === index} navigation={navigation} />))}
-      </View>
-    );
-  }
+function CustomTabBar({ state, navigation }) {
+  return (
+    <View style={styles.container}>
+      {tabs.map((tab, index) => (
+        <TabItem key={tab.name} tab={tab} focused={state.index === index} navigation={navigation} />))}
+    </View>
+  );
+}
 
-  export default function TabLayout() {
-    return (
-      <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => (<CustomTabBar {...props} />)} >
-        <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
-        <Tabs.Screen name="users" options={{ title: "users" }} />
-        <Tabs.Screen name="group" options={{ title: "Group" }} />
-        <Tabs.Screen name="settings" options={{ title: "Settings" }} />
-      </Tabs>
-    );
-  }
+export default function TabLayout() {
+  return (
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => (<CustomTabBar {...props} />)} >
+      <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
+      <Tabs.Screen name="users" options={{ title: "users" }} />
+      <Tabs.Screen name="chat" options={{ title: "Chats" }} />
+      <Tabs.Screen name="group" options={{ title: "Group" }} />
+      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
+    </Tabs>
+  );
+}
 
-  const styles = StyleSheet.create({
-    container: {
-      position: "absolute",
-      bottom: 20,
-      left: 20,
-      right: 20,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: "#c7fddf",
-      borderRadius: 30,
-      padding: 6,
-      elevation: 10,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      overflow: 'hidden'
-    },
-    activeTab: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 18,
-      paddingVertical: 10,
-      borderRadius: 25,
-    },
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#c7fddf",
+    borderRadius: 30,
+    padding: 6,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    overflow: 'hidden'
+  },
+  activeTab: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
 
-    inactiveTab: {
-      width: 44,
-      height: 44,
-      justifyContent: "center",
-      alignItems: "center",
-    },
+  inactiveTab: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-    activeText: {
-      color: "#fff",
-      marginLeft: 8,
-      fontWeight: "700",
-      fontSize: 13,
-    },
+  activeText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "700",
+    fontSize: 13,
+  },
 
-    inactiveText: {
-      color: "#777",
-      marginLeft: 6,
-      fontSize: 13,
-    },
-  });
+  inactiveText: {
+    color: "#777",
+    marginLeft: 6,
+    fontSize: 13,
+  },
+});

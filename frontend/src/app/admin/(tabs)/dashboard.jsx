@@ -4,9 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AppHeader from "../../../components/appHeader";
 import { getAlluser, userInfo } from "../../../hooks/useAuth";
-import { getChatList } from "../../../hooks/useChat";
+import { getAllChats, getChatList } from "../../../hooks/useChat";
 import { getAllGroups, getUserGroups } from "../../../hooks/useGroup";
-import { getAllChat } from "../../../../../backend/controllers/chatController";
 
 export default function Dashboard() {
     const [loading, setLoading] = useState(true);
@@ -24,7 +23,7 @@ export default function Dashboard() {
     const loadDashboard = async () => {
         try {
             setLoading(true);
-            const [userRes, usersRes, chatsRes, groupsRes,] = await Promise.all([userInfo(), getAlluser(), getAllChat(), getAllGroups(),]);
+            const [userRes, usersRes, chatsRes, groupsRes,] = await Promise.all([userInfo(), getAlluser(), getAllChats(), getAllGroups(),]);
             const users = usersRes?.users || [];
             const chats = chatsRes?.chats || [];
             const groups = groupsRes?.groups || [];

@@ -6,7 +6,7 @@ const chatRouter = express.Router();
 
 chatRouter.post("/create", authMiddleware, createOrGetChat);
 chatRouter.get("/list", authMiddleware, getUserChats);
+chatRouter.get("/getAllChats", authMiddleware, getAllChat);
 chatRouter.get("/:chatId", authMiddleware, getChatById);
-chatRouter.get("/getAllChats",authMiddleware,getAllChat);
 
 export default chatRouter;
