@@ -27,9 +27,9 @@ export default function Dashboard() {
             const users = usersRes?.users || [];
             const chats = chatsRes?.chats || [];
             const groups = groupsRes?.groups || [];
-            console.log(users);
-            console.log(chats);
-            console.log(groups);
+            // console.log(users);
+            // console.log(chats);
+            // console.log(groups);
             setCurrentUser(userRes?.user);
 
             setStats({

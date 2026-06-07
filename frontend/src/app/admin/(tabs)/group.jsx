@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TextInput, ActivityIndicator, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
-import { getUserGroups } from "../../../hooks/useGroup";
+import { getAllGroups } from "../../../hooks/useGroup";
 
 export default function Groups() {
     const [groups, setGroups] = useState([]);
@@ -15,9 +15,10 @@ export default function Groups() {
 
     const fetchGroups = async () => {
         try {
-            const response = await getUserGroups();
+            const response = await getAllGroups();
             if (response?.success) {
                 setGroups(response.groups || []);
+                console.log(response.groups)
             }
         } catch (error) {
             console.log(error);

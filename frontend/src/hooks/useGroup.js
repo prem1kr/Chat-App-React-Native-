@@ -91,3 +91,15 @@ export const deleteGroup = async (groupId) => {
         return error?.response?.data;
     }
 };
+
+
+export const getAllGroups = async () => {
+    try {
+        const token = await AsyncStorage.getItem("token");
+        const response = await axios.get(`${API_URL}/group/getAllGroup`, {headers: {Authorization: token ? `Bearer ${token}` : ""}});
+        return response.data;
+
+    } catch (error) {
+        return error?.response?.data;
+    }
+};

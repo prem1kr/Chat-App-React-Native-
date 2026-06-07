@@ -6,11 +6,12 @@ const groupRouter = express.Router();
 
 groupRouter.post("/create", authMiddleware, createGroup);
 groupRouter.get("/my-groups", authMiddleware, getUserGroups);
+groupRouter.get("/getAllGroup", authMiddleware, getAllGroups);
 groupRouter.get("/:groupId", authMiddleware, getGroupById);
 groupRouter.put("/:groupId/add-member", authMiddleware, addMember);
 groupRouter.put("/:groupId/remove-member", authMiddleware, removeMember);
 groupRouter.put("/:groupId/update", authMiddleware, updateGroup);
 groupRouter.delete("/:groupId", authMiddleware, deleteGroup);
-groupRouter.get("/getAllGroup",getAllGroups);
+
 
 export default groupRouter;

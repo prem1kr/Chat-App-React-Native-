@@ -216,7 +216,6 @@ export const getAllGroups = async (req, res) => {
   try {
 
     const groups = await groupModel.find().sort({ updatedAt: -1 });
-
     return res.status(200).json({ success: true, groups });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
