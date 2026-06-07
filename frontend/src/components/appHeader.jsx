@@ -21,9 +21,7 @@ const AppHeader = ({ onSearchPress, title = "P Chat", children }) => {
 
             <View style={styles.right}>
                 <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {getInitials(user?.name)}
-                    </Text>
+                    <Text style={styles.avatarText}> {getInitials(user?.name)}  </Text>
                 </View>
             </View>
 

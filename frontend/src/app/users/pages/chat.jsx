@@ -84,37 +84,17 @@ const Chat = () => {
         };
     }, [chatId]);
 
-    // ✅ RENDER MESSAGE
     const renderItem = ({ item }) => {
         const isMyMessage = item.sender?._id === userId;
-
         return (
-            <View style={[
-                styles.messageWrapper,
-                isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper
-            ]}>
-                <Text style={styles.senderName}>
-                    {isMyMessage ? "You" : item.sender?.name}
-                </Text>
+            <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
+                <Text style={styles.senderName}>  {isMyMessage ? "You" : item.sender?.name}</Text>
 
-                <View style={[
-                    styles.messageContainer,
-                    isMyMessage ? styles.sent : styles.received
-                ]}>
-                    <Text style={[
-                        styles.messageText,
-                        isMyMessage && { color: "#fff" }
-                    ]}>
-                        {item.text}
-                    </Text>
+                <View style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
+                    <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]}> {item.text} </Text>
                 </View>
 
-                <Text style={styles.timeText}>
-                    {new Date(item.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    })}
-                </Text>
+                <Text style={styles.timeText}> {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} </Text>
             </View>
         );
     };
@@ -127,34 +107,17 @@ const Chat = () => {
                 </TouchableOpacity>
             </AppHeader>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    keyExtractor={(item) => item._id}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.chatContainer}
-                    onContentSizeChange={() =>
-                        flatListRef.current?.scrollToEnd({ animated: true })
-                    }
-                />
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} >
+                <FlatList ref={flatListRef} data={messages} keyExtractor={(item) => item._id} renderItem={renderItem}
+                    contentContainerStyle={styles.chatContainer} onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} />
 
-                {/* INPUT */}
                 <View style={styles.inputContainer}>
-                    <TextInput
-                        placeholder="Type a message..."
-                        value={message}
-                        onChangeText={setMessage}
-                        style={styles.input}
-                    />
-
+                    <TextInput placeholder="Type a message..." value={message} onChangeText={setMessage} style={styles.input} />
                     <TouchableOpacity style={styles.sendButton} onPress={send}>
                         <Ionicons name="send" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
+
             </KeyboardAvoidingView>
         </View>
     );

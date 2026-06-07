@@ -19,7 +19,7 @@ export const createGroup = async (req, res) => {
       members: uniqueMembers,
     });
 
-    const populatedGroup = await groupModel.findById(group._id).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
+    let populatedGroup = await groupModel.findById(group._id).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
 
     populatedGroup.members.forEach((member) => {
       io.to(member._id.toString()).emit("groupCreated", populatedGroup);
@@ -76,7 +76,7 @@ export const addMember = async (req, res) => {
       return res.status(400).json({ success: false, message: "memberId required" });
     }
 
-    const group = await groupModel.findById(groupId);
+    let group = await groupModel.findById(groupId);
     if (!group) {
       return res.status(404).json({ success: false, message: "Group not found" });
     }
@@ -92,7 +92,7 @@ export const addMember = async (req, res) => {
     group.members.push(memberId);
     await group.save();
 
-    const updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
+    let updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
 
     io.to(memberId).emit("addedToGroup", updatedGroup);
 
@@ -114,7 +114,7 @@ export const removeMember = async (req, res) => {
     const { memberId } = req.body;
     const userId = req.user.id;
 
-    const group = await groupModel.findById(groupId);
+    let group = await groupModel.findById(groupId);
     if (!group) {
       return res.status(404).json({ success: false, message: "Group not found" });
     }
@@ -126,7 +126,7 @@ export const removeMember = async (req, res) => {
     group.members = group.members.filter((m) => m.toString() !== memberId);
     await group.save();
 
-    const updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
+    let updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
 
     io.to(memberId).emit("removedFromGroup", {
       groupId, message: "You were removed from group"
@@ -152,7 +152,7 @@ export const updateGroup = async (req, res) => {
     const { groupName, groupImage } = req.body;
     const userId = req.user.id;
 
-    const group = await groupModel.findById(groupId);
+    let group = await groupModel.findById(groupId);
     if (!group) {
       return res.status(404).json({ success: false, message: "Group not found" });
     }
@@ -165,7 +165,7 @@ export const updateGroup = async (req, res) => {
     if (groupImage) group.groupImage = groupImage;
     await group.save();
 
-    const updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
+    let updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
 
     updatedGroup.members.forEach((member) => {
       io.to(member._id.toString()).emit("groupUpdated", updatedGroup);
@@ -195,7 +195,7 @@ export const deleteGroup = async (req, res) => {
       return res.status(403).json({ success: false, message: "Only admin can delete group" });
     }
 
-    const members = group.members.map((m) => m.toString());
+    let members = group.members.map((m) => m.toString());
     await groupModel.findByIdAndDelete(groupId);
 
     members.forEach((memberId) => {

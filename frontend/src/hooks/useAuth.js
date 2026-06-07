@@ -15,7 +15,7 @@ export const userInfo = async () => {
 };
 
 
-export const getAlluser = async (userId) => {
+export const getAlluser = async () => {
     try {
         const response = await axios.get(`${API_URL}/auth/all-users`);
         return response.data;
@@ -40,6 +40,17 @@ export const signup = async (data) => {
 export const login = async (data) => {
     try {
         const response = await axios.post(`${API_URL}/auth/login`, data);
+        return response.data;
+
+    } catch (error) {
+        return error.response.data;
+    }
+}
+
+
+export const logout = async () => {
+    try {
+        const response = await axios.post(`${API_URL}/auth/logout`);
         return response.data;
 
     } catch (error) {

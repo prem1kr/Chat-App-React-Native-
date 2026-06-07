@@ -4,25 +4,24 @@ import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import {logout} from "../../../hooks/useAuth";
 
 export default function Settings() {
+    const dispatch = useDispatch();
     const [darkMode, setDarkMode] = useState(false);
     const user = useSelector(state => state.user.user || []);
     const router = useRouter();
 
     const handleLogout = async () => {
-        Alert.alert("Logout", "Are you sure you want to logout?",
-            [{ text: "Cancel", style: "cancel" },
-            { text: "Logout", style: "destructive", onPress: () => { console.log("Logout User") }, },
-            ]
-        );
 
-        await AsyncStorage.removeItem('user');
-        await AsyncStorage.removeItem('userId');
-        await AsyncStorage.removeItem('token');
-
-        router.push('/login')
+        const response = await logout();
+        if (response.success) {
+            await AsyncStorage.removeItem('user');
+            await AsyncStorage.removeItem('userId');
+            await AsyncStorage.removeItem('token');
+            router.push('/login');
+        }
     };
 
     return (

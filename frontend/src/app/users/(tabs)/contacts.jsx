@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Modal, Image, } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAlluser } from "../../../hooks/useAuth";
@@ -9,11 +9,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { setUsers } from "../../../redux/slices/usersSlice";
 import { useRouter } from "expo-router";
 import { socket } from "@/socket/socket";
+import CreateGroupModal from "../../../components/createGroup";
+
 
 export default function Contacts() {
     const router = useRouter();
     const dispatch = useDispatch();
     const [search, setSearch] = useState("");
+    const [groupModalVisible, setGroupModalVisible] = useState(false);
+    const [groupName, setGroupName] = useState("");
+    const [groupImage, setGroupImage] = useState("");
     const [selectedUsers, setSelectedUsers] = useState([]);
     const Users = useSelector(state => state.users.users || []);
     const filteredUsers = Users.filter((user) =>
@@ -42,7 +47,10 @@ export default function Contacts() {
             if (res?.chat) {
                 const chatId = res.chat._id;
                 socket.emit("joinChat", chatId);
-                router.push(`/users/pages/chat/${chatId}`);
+                router.push({
+                    pathname: "/users/pages/chat",
+                    params: { chatId }
+                });
             }
         } catch (err) {
             console.log("Chat error:", err);
@@ -54,16 +62,35 @@ export default function Contacts() {
     // =========================
     const createGroupChat = async () => {
         try {
-            const data = {groupName: "New Group",members: selectedUsers};
+            if (!groupName.trim()) {
+                return alert("Enter group name");
+            }
+
+            const data = {
+                groupName,
+                groupImage,
+                members: selectedUsers,
+            };
+
             const res = await createGroup(data);
+
             if (res?.group) {
                 const groupId = res.group._id;
+
                 socket.emit("joinGroup", groupId);
+
                 setSelectedUsers([]);
-                router.push(`/users/pages/group/${groupId}`);
+                setGroupModalVisible(false);
+                setGroupName("");
+                setGroupImage("");
+
+                router.push({
+                    pathname: "/users/pages/group",
+                    params: { groupId },
+                });
             }
-        } catch (err) {
-            console.log("Group error:", err);
+        } catch (error) {
+            console.log(error);
         }
     };
 
@@ -92,18 +119,12 @@ export default function Contacts() {
         const isSelected = selectedUsers.includes(item._id);
 
         return (
-            <TouchableOpacity
-                onLongPress={() => toggleUser(item)}
-                onPress={() => handlePress(item)}
-                style={[styles.userCard, isSelected && styles.selectedCard]}
-            >
+            <TouchableOpacity onLongPress={() => toggleUser(item)} onPress={() => handlePress(item)}
+                style={[styles.userCard, isSelected && styles.selectedCard]}>
+
                 <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {getInitials(item.name)}
-                    </Text>
-                    {item.status === "Online" && (
-                        <View style={styles.onlineDot} />
-                    )}
+                    <Text style={styles.avatarText}> {getInitials(item.name)} </Text>
+                    {item.status === "Online" && (<View style={styles.onlineDot} />)}
                 </View>
 
                 <View style={styles.userInfo}>
@@ -133,54 +154,35 @@ export default function Contacts() {
     return (
         <>
             <AppHeader title="Contacts" />
-
             <View style={styles.container}>
 
-                {/* SEARCH */}
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <TextInput
-                        placeholder="Search users..."
-                        placeholderTextColor="#94a3b8"
-                        value={search}
-                        onChangeText={setSearch}
-                        style={styles.searchInput}
-                    />
+                    <TextInput placeholder="Search users..." placeholderTextColor="#94a3b8" value={search}
+                        onChangeText={setSearch} style={styles.searchInput} />
                 </View>
 
-                {/* SELECTED BANNER */}
                 {selectedUsers.length > 0 && (
                     <View style={styles.selectedBanner}>
-                        <Text style={styles.selectedText}>
-                            {selectedUsers.length} Selected
-                        </Text>
-
+                        <Text style={styles.selectedText}> {selectedUsers.length} Selected </Text>
                         <TouchableOpacity onPress={() => setSelectedUsers([])}>
                             <Ionicons name="close" size={22} color="#fff" />
                         </TouchableOpacity>
                     </View>
                 )}
 
-                {/* USERS */}
-                <FlatList
-                    data={filteredUsers}
-                    keyExtractor={(item) => item._id}
-                    renderItem={renderItem}
-                    contentContainerStyle={{ paddingBottom: 120 }}
-                />
+                <FlatList data={filteredUsers} keyExtractor={(item) => item._id} renderItem={renderItem}
+                    contentContainerStyle={{ paddingBottom: 120 }} />
 
-                {/* CREATE GROUP BUTTON */}
                 {selectedUsers.length >= 2 && (
-                    <TouchableOpacity
-                        style={styles.createGroupBtn}
-                        onPress={createGroupChat}
-                    >
+                    <TouchableOpacity style={styles.createGroupBtn} onPress={() => setGroupModalVisible(true)}>
                         <Ionicons name="people" size={20} color="#fff" />
-                        <Text style={styles.createGroupText}>
-                            Create Group
-                        </Text>
+                        <Text style={styles.createGroupText}>  Create Group </Text>
                     </TouchableOpacity>
                 )}
+
+                <CreateGroupModal visible={groupModalVisible} onClose={() => setGroupModalVisible(false)} groupName={groupName}
+                    setGroupName={setGroupName} groupImage={groupImage} setGroupImage={setGroupImage} onCreate={createGroupChat} />
             </View>
         </>
     );
@@ -331,5 +333,70 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontWeight: "700",
         marginLeft: 8,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    modalContainer: {
+        width: "90%",
+        backgroundColor: "#fff",
+        borderRadius: 20,
+        padding: 20,
+    },
+
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "700",
+        marginBottom: 15,
+        textAlign: "center",
+    },
+
+    modalInput: {
+        borderWidth: 1,
+        borderColor: "#ddd",
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        height: 50,
+        marginBottom: 12,
+    },
+
+    previewImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignSelf: "center",
+        marginBottom: 15,
+    },
+
+    modalButtons: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+
+    cancelBtn: {
+        flex: 1,
+        backgroundColor: "#ef4444",
+        padding: 14,
+        borderRadius: 12,
+        marginRight: 8,
+        alignItems: "center",
+    },
+
+    createBtn: {
+        flex: 1,
+        backgroundColor: "#4facfe",
+        padding: 14,
+        borderRadius: 12,
+        marginLeft: 8,
+        alignItems: "center",
+    },
+
+    btnText: {
+        color: "#fff",
+        fontWeight: "700",
     },
 });

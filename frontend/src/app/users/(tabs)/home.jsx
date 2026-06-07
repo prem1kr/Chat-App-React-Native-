@@ -4,37 +4,74 @@ import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
 import { getChatList } from "../../../hooks/useChat";
+import { getUserGroups } from "../../../hooks/useGroup";
 import { useRouter } from "expo-router";
 
 export default function UserHome() {
     const router = useRouter();
 
-    const [chats, setChats] = useState([]);
+    const [items, setItems] = useState([]);
     const [search, setSearch] = useState("");
 
-    /* ---------------- LOAD CHATS ---------------- */
-    const loadChats = async () => {
-        const res = await getChatList();
-        if (res?.chats) setChats(res.chats);
+    /* ---------------- LOAD CHATS + GROUPS ---------------- */
+    const loadData = async () => {
+        try {
+            const [chatRes, groupRes] = await Promise.all([
+                getChatList(),
+                getUserGroups(),
+            ]);
+
+            const chats =
+                chatRes?.chats?.map((chat) => ({
+                    ...chat,
+                    type: "chat",
+                })) || [];
+
+            const groups =
+                groupRes?.groups?.map((group) => ({
+                    ...group,
+                    type: "group",
+                })) || [];
+
+            const merged = [...chats, ...groups].sort(
+                (a, b) =>
+                    new Date(b.lastMessageTime || b.updatedAt) -
+                    new Date(a.lastMessageTime || a.updatedAt)
+            );
+
+            setItems(merged);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
-    /* ---------------- FORMAT TIME ---------------- */
-    const formatTime = (time) => {
-        if (!time) return "";
-        return new Date(time).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+    useEffect(() => {
+        loadData();
+
+        socket.on("chatCreated", loadData);
+        socket.on("groupCreated", loadData);
+        socket.on("groupUpdated", loadData);
+
+        return () => {
+            socket.off("chatCreated", loadData);
+            socket.off("groupCreated", loadData);
+            socket.off("groupUpdated", loadData);
+        };
+    }, []);
+
+    /* ---------------- HELPERS ---------------- */
+
+    const getName = (item) => {
+        if (item.type === "group") {
+            return item.groupName;
+        }
+
+        return item?.participants?.[0]?.name || "Unknown";
     };
 
-    /* ---------------- GET CHAT NAME ---------------- */
-    const getChatName = (chat) => {
-        const user = chat?.participants?.[0];
-        return user?.name || "Unknown";
-    };
+    const getAvatar = (item) => {
+        const name = getName(item);
 
-    const getChatAvatar = (chat) => {
-        const name = getChatName(chat);
         return name
             .split(" ")
             .map((n) => n[0])
@@ -42,84 +79,62 @@ export default function UserHome() {
             .toUpperCase();
     };
 
-    /* ---------------- SOCKET HANDLERS ---------------- */
-    useEffect(() => {
-        loadChats();
+    const formatTime = (time) => {
+        if (!time) return "";
 
-        const onChatCreated = (payload) => {
-            setChats((prev) => [payload.chat, ...prev]);
-        };
+        return new Date(time).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 
-        const onNewMessage = (message) => {
-            setChats((prev) =>
-                prev.map((chat) =>
-                    chat._id === message.chatId
-                        ? {
-                            ...chat,
-                            lastMessage: message.text,
-                            lastMessageTime: message.createdAt,
-                        }
-                        : chat
-                )
-            );
-        };
+    /* ---------------- SEARCH ---------------- */
 
-        socket.on("chatCreated", onChatCreated);
-        socket.on("newMessage", onNewMessage);
+    const filteredItems = items.filter((item) =>
+        getName(item)
+            .toLowerCase()
+            .includes(search.toLowerCase())
+    );
 
-        return () => {
-            socket.off("chatCreated", onChatCreated);
-            socket.off("newMessage", onNewMessage);
-        };
-    }, []);
+    /* ---------------- OPEN CHAT/GROUP ---------------- */
 
-    /* ---------------- SEARCH FILTER ---------------- */
-    const filteredChats = chats.filter((item) => {
-        const name = getChatName(item).toLowerCase();
-        return name.includes(search.toLowerCase());
-    });
-
-    /* ---------------- CHAT OPEN ---------------- */
-    const openChat = useCallback(
-        (chatId) => {
-            router.push(`/users/pages/chat/${chatId}`);
+    const openItem = useCallback(
+        (item) => {
+            if (item.type === "group") {
+                router.push({
+                    pathname: "/users/pages/group",
+                    params: { groupId: item._id },
+                });
+            } else {
+                router.push({
+                    pathname: "/users/pages/chat",
+                    params: { chatId: item._id },
+                });
+            }
         },
         [router]
     );
 
-    /* ---------------- RENDER ITEM ---------------- */
+    /* ---------------- RENDER ---------------- */
+
     const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.chatCard}
-            activeOpacity={0.85}
-            onPress={() => openChat(item._id)}
-        >
-            <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{getChatAvatar(item)}</Text>
-                <View style={styles.onlineDot} />
+        <TouchableOpacity style={styles.chatCard} activeOpacity={0.85} onPress={() => openItem(item)}>
+
+            <View style={[styles.avatar, item.type === "group" && { backgroundColor: "#22c55e" }]}>
+                <Text style={styles.avatarText}> {item.type === "group" ? "👥" : getAvatar(item)}</Text>
             </View>
 
             <View style={styles.chatInfo}>
                 <View style={styles.row}>
-                    <Text style={styles.name}>{getChatName(item)}</Text>
-                    <Text style={styles.time}>
-                        {formatTime(item.lastMessageTime)}
-                    </Text>
+                    <Text style={styles.name}> {getName(item)} </Text>
+                    <Text style={styles.time}> {formatTime(item.lastMessageTime || item.updatedAt)}</Text>
                 </View>
 
                 <View style={styles.row}>
-                    <Text style={styles.message} numberOfLines={1}>
-                        {item.lastMessage || "No messages yet"}
-                    </Text>
-
-                    {!!item.unreadCount && item.unreadCount > 0 && (
-                        <View style={styles.badge}>
-                            <Text style={styles.badgeText}>
-                                {item.unreadCount}
-                            </Text>
-                        </View>
-                    )}
+                    <Text style={styles.message} numberOfLines={1}> {item.lastMessage || "No messages yet"}</Text>
+                    {item.type === "group" && (<Ionicons name="people" size={18} color="#22c55e" />)}
                 </View>
+
             </View>
         </TouchableOpacity>
     );
@@ -130,26 +145,16 @@ export default function UserHome() {
             <AppHeader />
 
             <View style={styles.container}>
-                {/* SEARCH */}
+
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <TextInput
-                        placeholder="Search chats..."
-                        placeholderTextColor="#94a3b8"
-                        value={search}
-                        onChangeText={setSearch}
-                        style={styles.searchInput}
-                    />
+                    <TextInput placeholder="Search chats & groups..." placeholderTextColor="#94a3b8" value={search}
+                        onChangeText={setSearch} style={styles.searchInput} />
                 </View>
 
-                {/* CHAT LIST */}
-                <FlatList
-                    data={filteredChats}
-                    keyExtractor={(item) => item._id}
-                    renderItem={renderItem}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 120 }}
-                />
+                <FlatList data={filteredItems} keyExtractor={(item) => item._id} renderItem={renderItem}
+                    showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }} />
+
             </View>
         </>
     );
@@ -172,9 +177,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         marginBottom: 15,
         elevation: 2,
-        shadowColor: "#4facfe",
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
     },
 
     searchInput: {
@@ -194,10 +196,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#eef2ff",
         elevation: 4,
-        shadowColor: "#7b5cff",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
     },
 
     avatar: {
@@ -208,19 +206,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginRight: 14,
-        position: "relative",
-    },
-
-    onlineDot: {
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: "#22c55e",
-        borderWidth: 2,
-        borderColor: "#fff",
-        position: "absolute",
-        bottom: 2,
-        right: 2,
     },
 
     avatarText: {
@@ -248,7 +233,6 @@ const styles = StyleSheet.create({
     time: {
         fontSize: 12,
         color: "#94a3b8",
-        fontWeight: "500",
     },
 
     message: {
@@ -257,21 +241,5 @@ const styles = StyleSheet.create({
         marginRight: 10,
         fontSize: 14,
         color: "#64748b",
-    },
-
-    badge: {
-        minWidth: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: "#4facfe",
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 6,
-    },
-
-    badgeText: {
-        color: "#fff",
-        fontSize: 12,
-        fontWeight: "700",
     },
 });

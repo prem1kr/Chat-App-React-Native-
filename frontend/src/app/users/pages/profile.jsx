@@ -89,7 +89,6 @@ const EditProfile = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Form */}
                         <View style={styles.form}>
                             <Text style={styles.sectionTitle}>Personal Info</Text>
                             <TextInput placeholder="Full Name" style={styles.input} value={form.name} onChangeText={(text) => handleChange('name', text)} />
@@ -98,9 +97,9 @@ const EditProfile = () => {
                             <TextInput placeholder="Address" style={styles.input} value={form.address} onChangeText={(text) => handleChange('address', text)} />
                             <Text style={styles.sectionTitle}>About You</Text>
                             <TextInput placeholder="write your bio" style={[styles.input, styles.bioInput]} value={form.bio} onChangeText={(text) => handleChange('bio', text)} multiline textAlignVertical="top" maxLength={200} />
-
                             <LoadingButton title={'Update Profile'} loading={loading} style={styles.saveBtn} onPress={handleSave} />
                         </View>
+                        
                     </ScrollView>
                 </KeyboardAvoidingView >
 
