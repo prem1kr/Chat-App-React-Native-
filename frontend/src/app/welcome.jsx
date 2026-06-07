@@ -42,7 +42,7 @@ export default function Welcome() {
     <LinearGradient colors={['#4ec28d', '#1fa2ff']} style={styles.container}>
       <Animated.View style={[styles.innerContainer, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
-        <Text style={styles.title}> Drive Now</Text>
+        <Text style={styles.title}> P-Chat Now</Text>
         <Text style={styles.subtitle}>Your Chat, Your Freedom</Text>
       </Animated.View>
     </LinearGradient>
