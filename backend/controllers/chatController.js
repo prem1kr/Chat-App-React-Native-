@@ -71,23 +71,10 @@ export const getChatById = async (req, res) => {
 
 export const getAllChat = async (req, res) => {
   try {
-    const chats = await chatModel
-      .find()
-      .populate("participants", "name email profilePic isOnline")
-      .sort({ updatedAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      chats,
-    });
+    const chats = await chatModel.find().populate("participants", "name email profilePic isOnline").sort({ updatedAt: -1 });
+    return res.status(200).json({ success: true, chats });
 
   } catch (error) {
-    console.log("GET ALL CHATS ERROR:", error); // IMPORTANT
-
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
   }
 };
