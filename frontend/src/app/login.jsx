@@ -28,7 +28,7 @@ const Login = () => {
                 await AsyncStorage.setItem("userId", res.user.id);
                 Alert.alert("Success", res.message);
                 if (res.user.role === "admin") {
-                    router.replace("/admin/home");
+                    router.replace("/admin/dashboard");
                 } else {
                     router.replace("/users/home");
                 }

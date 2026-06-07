@@ -1,6 +1,6 @@
 import express from "express";
 import { authMiddleware } from "../middleware/authMiddleware.js";
-import { addMember, createGroup, deleteGroup, getGroupById, getUserGroups, removeMember, updateGroup } from "../controllers/groupController.js";
+import { addMember, createGroup, deleteGroup, getAllGroups, getGroupById, getUserGroups, removeMember, updateGroup } from "../controllers/groupController.js";
 
 const groupRouter = express.Router();
 
@@ -11,5 +11,6 @@ groupRouter.put("/:groupId/add-member", authMiddleware, addMember);
 groupRouter.put("/:groupId/remove-member", authMiddleware, removeMember);
 groupRouter.put("/:groupId/update", authMiddleware, updateGroup);
 groupRouter.delete("/:groupId", authMiddleware, deleteGroup);
+groupRouter.get("/getAllGroup",getAllGroups);
 
 export default groupRouter;
