@@ -1,308 +1,337 @@
-For a WhatsApp-like app, don't replace your REST APIs with Socket.IO. Use **both**:
+# PKChat 💬
+A modern real-time chat application built with **React Native (Expo)**, **Node.js**, **Express.js**, **MongoDB**, **Redux Toolkit**, and **Socket.IO**. PKChat provides secure authentication, one-to-one messaging, group chats, real-time communication, profile management, and a scalable architecture for mobile applications.
 
-* **REST API** → save/fetch data from MongoDB.
-* **Socket.IO** → real-time updates (new messages, typing, online status, read receipts, group updates).
+---
 
-## 1. Connection Flow
+## 🚀 Features
 
-### Frontend
+### 🔐 Authentication
+- User Registration
+- User Login
+- Admin Login
+- Admin Registration
+- JWT Authentication
+- Persistent Login using AsyncStorage
+- Protected Routes
 
-Connect after login:
+### 👤 User Management
+- User Profiles
+- Edit Profile Information
+- User Search
+- Online/Offline Status
 
-```js
-import { io } from "socket.io-client";
+### 💬 Real-Time Chat
+- One-to-One Messaging
+- Real-Time Message Delivery
+- Socket.IO Integration
+- Message Persistence
+- Chat History
+- Message Delivered Tick
+- Message Read Tick
 
-export const socket = io(SOCKET_URL, {
-    autoConnect: false,
-});
+### 👥 Group Chat
+- Create Groups
+- Add/Remove Members
+- Group Messaging
+- Group Information Management
 
-socket.connect();
+### ⚡ State Management
+- Redux Toolkit
+- Global User State
+- Profile State Management
+- Optimized Data Flow
 
-socket.emit("join", userId);
-```
+### 📱 Mobile Features
+- Expo Router Navigation
+- Responsive UI
+- Cross Platform Support
+- Android Support
+- Web Support
 
-### Backend
+---
 
-```js
-export const initializeSocket = (io) => {
-    io.on("connection", (socket) => {
-        console.log("Connected:", socket.id);
+# 🏗️ Tech Stack
 
-        socket.on("join", (userId) => {
-            socket.join(userId);
-        });
+## Frontend
+- React Native
+- Expo SDK 56
+- Expo Router
+- Redux Toolkit
+- React Redux
+- Axios
+- Socket.IO Client
+- AsyncStorage
+- React Navigation
 
-        socket.on("disconnect", () => {
-            console.log("Disconnected");
-        });
-    });
-};
+
+## Backend
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT Authentication
+- Socket.IO
+- BcryptJS
+- CORS
+
+---
+
+# 📂 Project Structure
+
+## Frontend
+
+```bash
+frontend/
+│
+├── src/
+│   ├── app/
+│   │   ├── admin/
+│   │   ├── users/
+│   │   ├── _layout.tsx
+│   │   ├── index.tsx
+│   │   ├── login.jsx
+│   │   ├── signup.jsx
+│   │   └── welcome.jsx
+│   │
+│   ├── components/
+│   │   ├── appHeader.jsx
+│   │   ├── createGroup.jsx
+│   │   ├── groupModal.jsx
+│   │   ├── loadingButton.jsx
+│   │   └── membersModal.jsx
+│   │
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useChat.js
+│   │   ├── useGroup.js
+│   │   ├── useMessage.js
+│   │   └── useProfile.js
+│   │
+│   ├── redux/
+│   │   ├── slices/
+│   │   │   ├── profileSlice.js
+│   │   │   ├── userSlice.js
+│   │   │   └── usersSlice.js
+│   │   │
+│   │   └── store/
+│   │       └── store.js
+│   │
+│   ├── socket/
+│   │   └── socket.js
+│   │
+│   └── global.css
+│
+├── assets/
+├── android/
+├── .env
+├── app.json
+└── package.json
 ```
 
 ---
 
-# 2. Private Chat Messages
+## Backend
 
-### After saving message in DB
-
-In your `sendMessage` controller:
-
-```js
-const populatedMessage = await messageModel
-    .findById(message._id)
-    .populate("sender", "name profilePic");
-```
-
-Emit to receiver:
-
-```js
-io.to(receiverId).emit("newMessage", populatedMessage);
-```
-
-Frontend:
-
-```js
-useEffect(() => {
-    socket.on("newMessage", (message) => {
-        dispatch(addMessage(message));
-    });
-
-    return () => {
-        socket.off("newMessage");
-    };
-}, []);
-```
-
----
-
-# 3. Chat List Updates
-
-When a new message arrives:
-
-Backend:
-
-```js
-io.to(receiverId).emit("chatUpdated", {
-    chatId,
-    lastMessage: text,
-});
-```
-
-Frontend Chat List Screen:
-
-```js
-socket.on("chatUpdated", (chat) => {
-    dispatch(updateChat(chat));
-});
-```
-
-No need to refetch all chats.
-
----
-
-# 4. Group Messages
-
-When sending to group:
-
-```js
-const group = await groupModel.findById(groupId);
-```
-
-Emit to all members:
-
-```js
-group.members.forEach(member => {
-    io.to(member.toString()).emit(
-        "groupMessage",
-        populatedMessage
-    );
-});
-```
-
-Frontend:
-
-```js
-socket.on("groupMessage", (message) => {
-    dispatch(addGroupMessage(message));
-});
+```bash
+backend/
+│
+├── config/
+│   ├── db.js
+│   └── socket.js
+│
+├── controllers/
+│   ├── authController.js
+│   ├── chatController.js
+│   ├── groupController.js
+│   ├── messageController.js
+│   └── profileController.js
+│
+├── middleware/
+│   └── authMiddleware.js
+│
+├── models/
+│   ├── authModel.js
+│   ├── chatModel.js
+│   ├── groupModel.js
+│   ├── messageModel.js
+│   └── profileModel.js
+│
+├── routes/
+│   ├── authRoute.js
+│   ├── chatRoute.js
+│   ├── groupRoute.js
+│   ├── messageRoute.js
+│   └── profileRoute.js
+│
+├── socket/
+│   └── socket.js
+│
+├── .env
+├── server.js
+└── package.json
 ```
 
 ---
 
-# 5. Online / Offline Status
+# ⚙️ Installation
 
-### Backend
+## 1️⃣ Clone Repository
 
-```js
-socket.on("join", async (userId) => {
-    await userModel.findByIdAndUpdate(
-        userId,
-        { isOnline: true }
-    );
+```bash
+git clone https://github.com/prem1kr/Chat-App-React-Native-.git
 
-    socket.broadcast.emit("userOnline", userId);
-});
-```
-
-### Disconnect
-
-```js
-socket.on("disconnect", async () => {
-    await userModel.findByIdAndUpdate(
-        userId,
-        { isOnline: false }
-    );
-
-    socket.broadcast.emit("userOffline", userId);
-});
-```
-
-Frontend:
-
-```js
-socket.on("userOnline", userId => {
-    dispatch(setOnline(userId));
-});
-
-socket.on("userOffline", userId => {
-    dispatch(setOffline(userId));
-});
+cd Chat-App-React-Native-
 ```
 
 ---
 
-# 6. Read Receipts
+# 🔥 Backend Setup
 
-When chat opens:
+Navigate to backend:
 
-```js
-await markAsRead(messageId);
-
-socket.emit("messageRead", {
-    messageId,
-    senderId,
-});
+```bash
+cd backend
 ```
 
-Backend:
+Install dependencies:
 
-```js
-socket.on("messageRead", (data) => {
-    io.to(data.senderId).emit(
-        "messageReadUpdate",
-        data
-    );
-});
+```bash
+npm install
 ```
 
-Frontend:
+Create `.env`
 
-```js
-socket.on("messageReadUpdate", (data) => {
-    dispatch(updateReadStatus(data));
-});
+```env
+PORT=5000
+
+MONGO_URI=mongodb+srv://your_username:your_password@cluster.mongodb.net/pkchat
+
+JWT_SECRET=your_secret_key
 ```
 
----
+Start server:
 
-# 7. Delivered Receipts
-
-Backend:
-
-```js
-io.to(senderId).emit(
-    "messageDelivered",
-    messageId
-);
+```bash
+npm start
 ```
 
-Frontend:
+Server runs on:
 
-```js
-socket.on("messageDelivered", (messageId) => {
-    dispatch(markDelivered(messageId));
-});
+```bash
+http://localhost:5000
 ```
 
 ---
 
-# 8. Typing Indicator
+# 📱 Frontend Setup
 
-Frontend:
+Navigate to frontend:
 
-```js
-socket.emit("typing", {
-    receiverId,
-    chatId,
-});
+```bash
+cd frontend
 ```
 
-Backend:
+Install dependencies:
 
-```js
-socket.on("typing", (data) => {
-    io.to(data.receiverId).emit(
-        "userTyping",
-        data
-    );
-});
+```bash
+npm install
 ```
 
-Frontend:
+```env
+EXPO_PUBLIC_API_URL=http://192.168.1.5:5000/api
 
-```js
-socket.on("userTyping", () => {
-    setTyping(true);
-});
+EXPO_PUBLIC_SOCKET_URL=http://192.168.1.5:5000
+```
+
+Start Expo:
+
+```bash
+npm start
+```
+
+or
+
+```bash
+expo start
 ```
 
 ---
 
-# Recommended Architecture
 
-### REST APIs
+---
 
-Use for:
+# 🚀 Running on Android
 
-```txt
-POST /chat/create
-GET  /chat/list
-GET  /chat/:id
-
-POST /group/create
-GET  /group/:id
-
-POST /message/send
-GET  /message/chat/:id
-GET  /message/group/:id
+```bash
+npm run android
 ```
 
-### Socket.IO
+---
 
-Use for:
+# 🌐 Running on Web
 
-```txt
-newMessage
-groupMessage
-chatUpdated
-userOnline
-userOffline
-typing
-messageRead
-messageDelivered
-memberAdded
-memberRemoved
-groupUpdated
-groupDeleted
+```bash
+npm run web
 ```
 
-A common pattern is:
+---
 
-1. User sends message.
-2. Frontend calls `POST /message/send`.
-3. Backend saves to MongoDB.
-4. Backend emits Socket.IO event.
-5. Receiver instantly sees the new message.
-6. Chat list updates automatically.
+# 📦 Build APK
 
-This gives you persistence through MongoDB and real-time behavior through Socket.IO.
+Generate Android APK:
+
+```bash
+npx expo prebuild
+
+cd android
+
+./gradlew assembleRelease
+```
+
+APK location:
+
+```bash
+https://expo.dev/accounts/prem97344/projects/chat-app/builds/03f03e57-2322-4616-879d-ead718b2d578
+```
+
+---
+
+# 🔒 Security
+
+- Password Hashing using BcryptJS
+- JWT Authentication
+- Protected API Routes
+- Environment Variables
+- Secure MongoDB Connection
+
+---
+
+# 📈 Future Enhancements
+
+- Voice Calling
+- Video Calling
+- Push Notifications
+- Message Reactions
+- Media Sharing
+- Message Encryption
+- Dark Mode
+
+---
+
+# 👨‍💻 Author
+
+**Prem Kumar**
+
+Full Stack Web Developer and Mobile App Developer 
+
+### Skills
+
+- React Native
+- React.js
+- Next.js
+- Node.js
+- Express.js
+- MongoDB
+- Redux Toolkit
+- Socket.IO
+- REST APIs
