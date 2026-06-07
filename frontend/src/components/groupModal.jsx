@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { addMember, removeMember, updateGroup, deleteGroup } from "../hooks/useGroup";
+import { useRouter } from "expo-router";
 
 export default function GroupModal({ visible, onClose, group, users = [], currentUserId, refreshGroup }) {
     const [groupName, setGroupName] = useState(group?.groupName || "");
     const isAdmin = group?.admin?._id === currentUserId;
+    const router = useRouter();
 
     const handleUpdateGroup = async () => {
         const res = await updateGroup(group._id, { groupName });
@@ -20,6 +22,7 @@ export default function GroupModal({ visible, onClose, group, users = [], curren
         const res = await addMember(group?._id, memberId);
         if (res?.success) {
             refreshGroup();
+            onClose();
         }
     };
 
@@ -28,6 +31,7 @@ export default function GroupModal({ visible, onClose, group, users = [], curren
         console.log("REMOVE MEMBER RESPONSE:", res);
         if (res?.success) {
             refreshGroup();
+            onClose();
         }
     };
 
@@ -36,7 +40,9 @@ export default function GroupModal({ visible, onClose, group, users = [], curren
         const res = await deleteGroup(group?._id);
             console.log("DELETE GROUP RESPONSE:", res);
         if (res?.success) {
+            router.push('/users/home');
             refreshGroup();
+            onClose();
         }
     };
 

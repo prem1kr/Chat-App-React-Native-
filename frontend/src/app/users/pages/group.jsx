@@ -8,7 +8,7 @@ import { socket } from "@/socket/socket";
 import AppHeader from "../../../components/appHeader";
 import { Ionicons } from "@expo/vector-icons";
 import GroupModal from "../../../components/groupModal";
-import {getAlluser} from "../../../hooks/useAuth";
+import { getAlluser } from "../../../hooks/useAuth";
 
 export default function GroupScreen() {
   const { groupId } = useLocalSearchParams();
@@ -45,7 +45,6 @@ export default function GroupScreen() {
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
-
     socket.on("groupMessage", (message) => {
       setMessages((prev) => [...prev, message]);
     });
@@ -157,7 +156,7 @@ export default function GroupScreen() {
       </View>
 
       {group && (
-        <GroupModal visible={showGroupModal} onClose={() => setShowGroupModal(false)} group={group} users={users} currentUserId={userId} refreshGroup={initialize()} />
+        <GroupModal visible={showGroupModal} onClose={() => setShowGroupModal(false)} group={group} users={users} currentUserId={userId} refreshGroup={initialize} />
       )}
 
     </View>

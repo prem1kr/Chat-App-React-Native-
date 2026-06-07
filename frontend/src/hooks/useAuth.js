@@ -57,3 +57,12 @@ export const logout = async () => {
         return error.response.data;
     }
 }
+
+export const user = async (userId) => {
+    try {
+        const response = await axios.get(`${API_URL}/auth/user-id/${userId}`);
+        return response.data;
+    } catch (error) {
+        return error?.response?.data;
+    }
+};

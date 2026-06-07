@@ -7,6 +7,7 @@ const authRouter = express.Router();
 authRouter.post('/signup', Signup);
 authRouter.post('/login', Login);
 authRouter.get('/user', authMiddleware, User);
+authRouter.get('user-id/:userId', User);
 authRouter.post('/logout', Logout);
 authRouter.get('/total-user', TotalUser);
 authRouter.get('/all-users', getAllUser);

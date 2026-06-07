@@ -9,36 +9,19 @@ import { useRouter } from "expo-router";
 
 export default function UserHome() {
     const router = useRouter();
-
     const [items, setItems] = useState([]);
     const [search, setSearch] = useState("");
 
-    /* ---------------- LOAD CHATS + GROUPS ---------------- */
     const loadData = async () => {
         try {
-            const [chatRes, groupRes] = await Promise.all([
-                getChatList(),
-                getUserGroups(),
-            ]);
+            const [chatRes, groupRes] = await Promise.all([getChatList(), getUserGroups()]);
+            const chats = chatRes?.chats?.map((chat) => ({ ...chat, type: "chat" })) || [];
+            const groups = groupRes?.groups?.map((group) => ({ ...group, type: "group" })) || [];
 
-            const chats =
-                chatRes?.chats?.map((chat) => ({
-                    ...chat,
-                    type: "chat",
-                })) || [];
-
-            const groups =
-                groupRes?.groups?.map((group) => ({
-                    ...group,
-                    type: "group",
-                })) || [];
-
-            const merged = [...chats, ...groups].sort(
-                (a, b) =>
-                    new Date(b.lastMessageTime || b.updatedAt) -
-                    new Date(a.lastMessageTime || a.updatedAt)
+            const merged = [...chats, ...groups].sort((a, b) =>
+                new Date(b.lastMessageTime || b.updatedAt) -
+                new Date(a.lastMessageTime || a.updatedAt)
             );
-
             setItems(merged);
         } catch (error) {
             console.log(error);
@@ -47,56 +30,41 @@ export default function UserHome() {
 
     useEffect(() => {
         loadData();
-
         socket.on("chatCreated", loadData);
         socket.on("groupCreated", loadData);
         socket.on("groupUpdated", loadData);
-
+        socket.on("groupDeleted", loadData);
         return () => {
             socket.off("chatCreated", loadData);
             socket.off("groupCreated", loadData);
             socket.off("groupUpdated", loadData);
+            socket.off("groupDeleted", loadData);
         };
     }, []);
-
-    /* ---------------- HELPERS ---------------- */
 
     const getName = (item) => {
         if (item.type === "group") {
             return item.groupName;
         }
-
         return item?.participants?.[0]?.name || "Unknown";
     };
 
     const getAvatar = (item) => {
         const name = getName(item);
-
-        return name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase();
+        return name.split(" ").map((n) => n[0]).join("").toUpperCase();
     };
 
     const formatTime = (time) => {
         if (!time) return "";
-
         return new Date(time).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
         });
     };
 
-    /* ---------------- SEARCH ---------------- */
-
     const filteredItems = items.filter((item) =>
-        getName(item)
-            .toLowerCase()
-            .includes(search.toLowerCase())
+        getName(item).toLowerCase().includes(search.toLowerCase())
     );
-
-    /* ---------------- OPEN CHAT/GROUP ---------------- */
 
     const openItem = useCallback(
         (item) => {
@@ -111,11 +79,8 @@ export default function UserHome() {
                     params: { chatId: item._id },
                 });
             }
-        },
-        [router]
-    );
+        }, [router]);
 
-    /* ---------------- RENDER ---------------- */
 
     const renderItem = ({ item }) => (
         <TouchableOpacity style={styles.chatCard} activeOpacity={0.85} onPress={() => openItem(item)}>

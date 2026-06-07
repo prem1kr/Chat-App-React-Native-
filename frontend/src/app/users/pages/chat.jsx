@@ -1,41 +1,35 @@
-import {
-    StyleSheet, Text, View, TouchableOpacity,
-    FlatList, TextInput, KeyboardAvoidingView, Platform
-} from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
-
 import { socket } from "@/socket/socket";
 import { getChatMessages, sendMessage } from "../../../hooks/useMessage";
+import { user } from "../../../hooks/useAuth";
 
 const Chat = () => {
     const { chatId, name } = useLocalSearchParams();
-
     const flatListRef = useRef(null);
     const router = useRouter();
-
     const user = useSelector((state) => state.user.user || {});
     const userName = user?.name;
     const userId = user?._id;
-
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
 
-    // ✅ LOAD MESSAGES
     const loadMessages = async () => {
         const res = await getChatMessages(chatId);
         if (res?.messages) {
             setMessages(res.messages);
+            const response = await user(res.messages[0].deliveredTo[0]);
+            console.log(response);
+            console.log(res.messages);
         }
     };
 
-    // ✅ SEND MESSAGE
     const send = async () => {
         if (!message.trim()) return;
-
         const tempMsg = {
             _id: Date.now().toString(),
             text: message,
@@ -51,32 +45,25 @@ const Chat = () => {
             text: message,
             messageType: "text",
         });
-
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
     };
 
-    // ✅ SOCKET EVENTS
     useEffect(() => {
         loadMessages();
-
         socket.emit("joinChat", chatId);
-
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 setMessages((prev) => [...prev, msg]);
             }
         });
-
         socket.on("messageDeleted", ({ messageId }) => {
             setMessages((prev) => prev.filter((m) => m._id !== messageId));
         });
-
         socket.on("messageRead", () => {
             // optional UI update
         });
-
         return () => {
             socket.off("newMessage");
             socket.off("messageDeleted");
@@ -101,7 +88,7 @@ const Chat = () => {
 
     return (
         <View style={styles.container}>
-            <AppHeader title={name || "Chat"}>
+            <AppHeader title={userName || "Chat"}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>

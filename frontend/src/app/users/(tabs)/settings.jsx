@@ -5,7 +5,7 @@ import AppHeader from "../../../components/appHeader";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDispatch, useSelector } from "react-redux";
-import {logout} from "../../../hooks/useAuth";
+import { logout } from "../../../hooks/useAuth";
 
 export default function Settings() {
     const dispatch = useDispatch();

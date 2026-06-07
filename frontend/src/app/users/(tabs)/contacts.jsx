@@ -21,11 +21,8 @@ export default function Contacts() {
     const [groupImage, setGroupImage] = useState("");
     const [selectedUsers, setSelectedUsers] = useState([]);
     const Users = useSelector(state => state.users.users || []);
-    const filteredUsers = Users.filter((user) =>
-        user.name.toLowerCase().includes(search.toLowerCase())
-    );
-    const getInitials = (name = "") =>
-        name.split(" ").map((n) => n[0]).join("").toUpperCase();
+    const filteredUsers = Users.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
+    const getInitials = (name = "") => name.split(" ").map((n) => n[0]).join("").toUpperCase();
 
     useEffect(() => {
         fetchAllUsers();
@@ -38,9 +35,6 @@ export default function Contacts() {
         }
     };
 
-    // =========================
-    // INDIVIDUAL CHAT
-    // =========================
     const openChat = async (user) => {
         try {
             const res = await createChat(user._id);
@@ -57,9 +51,6 @@ export default function Contacts() {
         }
     };
 
-    // =========================
-    // GROUP CHAT CREATE
-    // =========================
     const createGroupChat = async () => {
         try {
             if (!groupName.trim()) {
@@ -76,14 +67,11 @@ export default function Contacts() {
 
             if (res?.group) {
                 const groupId = res.group._id;
-
                 socket.emit("joinGroup", groupId);
-
                 setSelectedUsers([]);
                 setGroupModalVisible(false);
                 setGroupName("");
                 setGroupImage("");
-
                 router.push({
                     pathname: "/users/pages/group",
                     params: { groupId },
@@ -94,16 +82,9 @@ export default function Contacts() {
         }
     };
 
-    // =========================
-    // SELECT LOGIC
-    // =========================
     const toggleUser = (item) => {
         const id = item._id;
-
-        setSelectedUsers((prev) =>
-            prev.includes(id)
-                ? prev.filter((i) => i !== id)
-                : [...prev, id]
+        setSelectedUsers((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
         );
     };
 
