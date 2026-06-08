@@ -3,15 +3,30 @@ import { View, Text, FlatList, TextInput, ActivityIndicator, Image, StyleSheet }
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAllGroups } from "../../../hooks/useGroup";
+import { getAlluser } from "../../../hooks/useAuth";
+import { setUsers } from "../../../redux/slices/usersSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Groups() {
     const [groups, setGroups] = useState([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch();
+    const users = useSelector(state => state.users.users || []);
 
-    useEffect(() => {
-        fetchGroups();
-    }, []);
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const res = await getAlluser();
+            if (res?.success) {
+                dispatch(setUsers(res.users));
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchGroups = async () => {
         try {
@@ -26,6 +41,11 @@ export default function Groups() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchUsers();
+        fetchGroups();
+    }, []);
 
     const filteredGroups = groups.filter((group) => group.groupName?.toLowerCase().includes(search.toLowerCase()));
     const getAvatar = (name) => { return name?.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase(); };
@@ -58,10 +78,16 @@ export default function Groups() {
             <AppHeader title="Groups" />
 
             <View style={styles.container}>
-                <View style={styles.headerCard}>
-                    <Text style={styles.title}>Group Management</Text>
-                    <Text style={styles.subtitle}>Total Groups: {groups.length}
-                    </Text>
+                <View style={styles.statsRow}>
+                    <View style={styles.statCard}>
+                        <Text style={styles.statNumber}>{groups.length}</Text>
+                        <Text style={styles.statLabel}>Total Groups</Text>
+                    </View>
+
+                    <View style={styles.statCard}>
+                        <Text style={styles.statNumber}>{users.filter((u) => u.isOnline).length}</Text>
+                        <Text style={styles.statLabel}>Online Users</Text>
+                    </View>
                 </View>
 
                 <View style={styles.searchContainer}>
@@ -184,5 +210,30 @@ const styles = StyleSheet.create({
     iconBtn: {
         marginLeft: 10,
         padding: 6,
+    },
+    statsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 20,
+    },
+
+    statCard: {
+        flex: 1,
+        backgroundColor: "#fff",
+        borderRadius: 22,
+        padding: 18,
+        marginHorizontal: 4,
+        elevation: 3,
+    },
+
+    statNumber: {
+        fontSize: 24,
+        fontWeight: "800",
+        color: "#4facfe",
+    },
+
+    statLabel: {
+        marginTop: 4,
+        color: "#64748b",
     },
 });

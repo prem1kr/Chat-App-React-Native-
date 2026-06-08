@@ -3,15 +3,30 @@ import { View, Text, FlatList, TextInput, ActivityIndicator, Image, StyleSheet, 
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAllChats } from "../../../hooks/useChat";
+import { useDispatch, useSelector } from "react-redux";
+import { setUsers } from "../../../redux/slices/usersSlice";
+import { getAlluser } from "../../../hooks/useAuth";
 
 export default function Chats() {
     const [chats, setChats] = useState([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch();
+    const users = useSelector(state => state.users.users || []);
 
-    useEffect(() => {
-        fetchChats();
-    }, []);
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const res = await getAlluser();
+            if (res?.success) {
+                dispatch(setUsers(res.users));
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchChats = async () => {
         try {
@@ -39,6 +54,11 @@ export default function Chats() {
     const getChatName = (item) => {
         return item.participants?.[0]?.name || "Unknown";
     };
+
+    useEffect(() => {
+        fetchUsers();
+        fetchChats();
+    }, []);
 
     const renderItem = ({ item }) => {
         const user = item.participants?.[0];
@@ -73,9 +93,17 @@ export default function Chats() {
             <AppHeader title="Chats" />
 
             <View style={styles.container}>
-                <View style={styles.headerCard}>
-                    <Text style={styles.title}> Chats Management</Text>
-                    <Text style={styles.subtitle}>Total Chats: {chats.length}</Text>
+
+                <View style={styles.statsRow}>
+                    <View style={styles.statCard}>
+                        <Text style={styles.statNumber}>{chats.length}</Text>
+                        <Text style={styles.statLabel}>Total Chats</Text>
+                    </View>
+
+                    <View style={styles.statCard}>
+                        <Text style={styles.statNumber}>{users.filter((u) => u.isOnline).length}</Text>
+                        <Text style={styles.statLabel}>Online Users</Text>
+                    </View>
                 </View>
 
                 <View style={styles.searchContainer}>
@@ -198,5 +226,30 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         backgroundColor: "#22c55e",
         marginRight: 8,
+    },
+    statsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 20,
+    },
+
+    statCard: {
+        flex: 1,
+        backgroundColor: "#fff",
+        borderRadius: 22,
+        padding: 18,
+        marginHorizontal: 4,
+        elevation: 3,
+    },
+
+    statNumber: {
+        fontSize: 24,
+        fontWeight: "800",
+        color: "#4facfe",
+    },
+
+    statLabel: {
+        marginTop: 4,
+        color: "#64748b",
     },
 });

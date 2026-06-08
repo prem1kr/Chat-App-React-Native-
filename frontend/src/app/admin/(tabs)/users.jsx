@@ -3,20 +3,21 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, S
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "../../../components/appHeader";
 import { getAlluser } from "../../../hooks/useAuth";
+import { useDispatch, useSelector } from "react-redux";
+import { setUsers } from "../../../redux/slices/usersSlice";
 
 export default function UsersScreen() {
     const [search, setSearch] = useState("");
-    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const dispatch = useDispatch();
+    const users = useSelector(state => state.users.users || []);
 
     const fetchUsers = async () => {
         try {
             setLoading(true);
-
             const res = await getAlluser();
-
             if (res?.success) {
-                setUsers(res.users || []);
+                dispatch(setUsers(res.users));
             }
         } catch (error) {
             console.log(error);
@@ -36,18 +37,13 @@ export default function UsersScreen() {
     );
 
     const getInitials = (name) =>
-        name
-            ?.split(" ")
-            ?.map((n) => n[0])
-            ?.join("")
-            ?.toUpperCase() || "?";
+        name?.split(" ")?.map((n) => n[0])?.join("")?.toUpperCase() || "?";
 
     return (
         <>
             <AppHeader title="Users" />
 
             <View style={styles.container}>
-                <Text style={styles.pageTitle}>Users Management</Text>
 
                 <View style={styles.statsRow}>
                     <View style={styles.statCard}>
