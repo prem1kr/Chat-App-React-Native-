@@ -6,11 +6,16 @@ import { socket } from "@/socket/socket";
 import { getChatList } from "../../../hooks/useChat";
 import { getUserGroups } from "../../../hooks/useGroup";
 import { useRouter } from "expo-router";
+import { useDispatch, useSelector } from "react-redux";
+import { addChat, removeChat, setChats, updateChat } from '../../../redux/slices/chatHomeSlice';
 
 export default function UserHome() {
+    const dispatch = useDispatch();
     const router = useRouter();
-    const [items, setItems] = useState([]);
     const [search, setSearch] = useState("");
+    const chatsGroups = useSelector(state => state.chatHome.chatHome || []);
+    const currentUser = useSelector(state => state.user.user || []);
+    const currentUserId = currentUser?._id || currentUser?.id;
 
     const loadData = async () => {
         try {
@@ -21,7 +26,7 @@ export default function UserHome() {
                 new Date(b.lastMessageTime || b.updatedAt) -
                 new Date(a.lastMessageTime || a.updatedAt)
             );
-            setItems(merged);
+            dispatch(setChats(merged));
         } catch (error) {
             console.log(error);
         }
@@ -29,32 +34,55 @@ export default function UserHome() {
 
     useEffect(() => {
         loadData();
-        socket.on("chatCreated", loadData);
-        socket.on("groupCreated", loadData);
-        socket.on("groupUpdated", loadData);
-        socket.on("groupDeleted", loadData);
-        socket.on("newMessage", loadData);
-        return () => {
-            socket.off("chatCreated", loadData);
-            socket.off("groupCreated", loadData);
-            socket.off("groupUpdated", loadData);
-            socket.off("groupDeleted", loadData);
-            socket.off("newMessage", loadData);
 
+        const handleChatCreated = (data) => {
+            dispatch(addChat(data.chat));
         };
-    }, []);
+
+        const handleGroupCreated = (data) => {
+            dispatch(addChat({ ...data.group, type: "group" }));
+        };
+
+        const handleGroupUpdated = (data) => {
+            dispatch(updateChat({ ...data.group, type: "group" }));
+        };
+
+        const handleGroupDeleted = (data) => {
+            dispatch(removeChat(data.groupId));
+        };
+
+        const handleNewMessage = (data) => {
+            dispatch(updateChat(data.chat));
+        };
+
+        socket.on("chatCreated", handleChatCreated);
+        socket.on("groupCreated", handleGroupCreated);
+        socket.on("groupUpdated", handleGroupUpdated);
+        socket.on("groupDeleted", handleGroupDeleted);
+        socket.on("newMessage", handleNewMessage);
+
+        return () => {
+            socket.off("chatCreated", handleChatCreated);
+            socket.off("groupCreated", handleGroupCreated);
+            socket.off("groupUpdated", handleGroupUpdated);
+            socket.off("groupDeleted", handleGroupDeleted);
+            socket.off("newMessage", handleNewMessage);
+        };
+    }, [dispatch]);
 
     const getName = (item) => {
         if (item.type === "group") {
             return item.groupName;
         }
-        return item?.participants?.[0]?.name || "Unknown";
+        const otherUser = item.participants?.find(user => user._id !== currentUserId);
+        return otherUser?.name || "Unknown"
     };
 
     const getAvatar = (item) => {
         const name = getName(item);
         return name.split(" ").map((n) => n[0]).join("").toUpperCase();
     };
+
     const formatTime = (time) => {
         if (!time) return "";
         return new Date(time).toLocaleTimeString([], {
@@ -63,9 +91,7 @@ export default function UserHome() {
         });
     };
 
-    const filteredItems = items.filter((item) =>
-        getName(item).toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredItems = chatsGroups.filter((item) => getName(item).toLowerCase().includes(search.toLowerCase()));
 
     const openItem = useCallback(
         (item) => {
@@ -112,7 +138,7 @@ export default function UserHome() {
     return (
         <>
             <StatusBar backgroundColor="#4facfe" barStyle="light-content" />
-            <AppHeader  title="P-Chat"/>
+            <AppHeader title="P-Chat" />
 
             <View style={styles.container}>
 

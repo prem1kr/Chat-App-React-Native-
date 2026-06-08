@@ -10,23 +10,27 @@ import { Ionicons } from "@expo/vector-icons";
 import GroupModal from "../../../components/groupModal";
 import { getAlluser } from "../../../hooks/useAuth";
 import MembersModal from "../../../components/memebersModal";
+import { useDispatch, useSelector } from "react-redux";
+import { setGroupMessages, addGroupMessage, updateGroupMessage, deleteGroupMessage, clearGroupMessages } from "../../../redux/slices/groupMessage";
+import { setUsers } from '../../../redux/slices/usersSlice';
 
 export default function GroupScreen() {
+  const dispatch = useDispatch();
   const { groupId } = useLocalSearchParams();
   const [group, setGroup] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [userId, setUserId] = useState("");
   const flatListRef = useRef(null);
   const [showGroupModal, setShowGroupModal] = useState(false);
-  const [users, setUsers] = useState([]);
   const router = useRouter();
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const messages = useSelector(state => state.groupMessages.messages || []);
+  const users = useSelector(state => state.users.users || []);
 
   const fetchAllUsers = async () => {
     const response = await getAlluser();
     if (response.success) {
-      setUsers(response.users);
+      dispatch(setUsers(response.users));
     }
   }
 
@@ -41,40 +45,45 @@ export default function GroupScreen() {
     }
 
     if (msgRes?.messages) {
-      setMessages(msgRes.messages);
+      dispatch(setGroupMessages(msgRes.messages));
     }
+  };
+
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    const tempMessage = { _id: Date.now().toString(), text, sender: { _id: userId }, createdAt: new Date().toISOString() };
+
+    dispatch(addGroupMessage(tempMessage));
+    const messageText = text;
+    setText("");
+    await sendMessage({ groupId, text: messageText, messageType: "text" });
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
     socket.on("groupMessage", (message) => {
-      setMessages((prev) => [...prev, message]);
+      dispatch(addGroupMessage(message));
     });
 
-    socket.on("groupUpdated", (updatedGroup) => {
-      if (updatedGroup._id === groupId) {
-        setGroup(updatedGroup);
-      }
+    socket.on("groupMessageDeleted", ({ messageId }) => {
+      dispatch(deleteGroupMessage(messageId));
     });
 
-    socket.on("groupDeleted", (deletedId) => {
-      if (deletedId === groupId) {
-        Alert.alert("Group Deleted");
-      }
+    socket.on("groupMessageUpdated", (message) => {
+      dispatch(updateGroupMessage(message));
     });
 
     return () => {
       socket.off("groupMessage");
       socket.off("groupUpdated");
       socket.off("groupDeleted");
+      socket.off("groupMessageDeleted");
+      socket.off("groupMessageUpdated");
     };
   }, []);
-
-  const handleSend = async () => {
-    if (!text.trim()) return;
-    await sendMessage({ groupId, text, messageType: "text", });
-    setText("");
-  };
 
   useEffect(() => {
     initialize();
@@ -103,7 +112,7 @@ export default function GroupScreen() {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="" isAdmin={isAdmin} onMenuPress={() => setShowGroupModal(true)} onMembers={()=> setShowMembersModal(true)} >
+      <AppHeader title="" isAdmin={isAdmin} onMenuPress={() => setShowGroupModal(true)} onMembers={() => setShowMembersModal(true)} >
 
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -138,7 +147,7 @@ export default function GroupScreen() {
         <GroupModal visible={showGroupModal} onClose={() => setShowGroupModal(false)} group={group} users={users} currentUserId={userId} refreshGroup={initialize} />
       )}
 
-      <MembersModal visible={showMembersModal}onClose={() => setShowMembersModal(false)} members={group?.members || []}/>
+      <MembersModal visible={showMembersModal} onClose={() => setShowMembersModal(false)} members={group?.members || []} />
 
     </View>
   );

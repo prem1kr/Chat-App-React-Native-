@@ -2,13 +2,15 @@ import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, Keyboard
 import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
 import { getChatMessages, sendMessage, markAsDelivered, markAsRead } from "../../../hooks/useMessage";
 import MembersModal from "../../../components/memebersModal";
+import { addMessage, deleteMessage, setChatMessages, updateMessage } from '../../../redux/slices/chatMessages';
 
 const Chat = () => {
+    const dispatch = useDispatch();
     const { chatId, name } = useLocalSearchParams();
     const flatListRef = useRef(null);
     const router = useRouter();
@@ -16,13 +18,13 @@ const Chat = () => {
     const userId = user?._id;
     const userName = user?.name;
     const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState([]);
+    const messages = useSelector(state => state.chatMessages.messages || []);
 
     const loadMessages = async () => {
         const res = await getChatMessages(chatId);
 
         if (res?.messages) {
-            setMessages(res.messages);
+            dispatch(setChatMessages(res.messages));
             for (const msg of res.messages) {
                 if (
                     msg.sender?._id !== userId && !msg.deliveredTo?.includes(userId)
@@ -44,15 +46,9 @@ const Chat = () => {
             deliveredTo: [],
             readBy: [],
         };
-
-        setMessages((prev) => [...prev, tempMsg]);
+        dispatch(addMessage(tempMsg));
         setMessage("");
-
-        await sendMessage({
-            chatId,
-            text: message,
-            messageType: "text",
-        });
+        await sendMessage({ chatId, text: message, messageType: "text" });
 
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
@@ -65,43 +61,20 @@ const Chat = () => {
 
         socket.on("newMessage", async (msg) => {
             if (msg.chatId === chatId) {
-                setMessages((prev) => [...prev, msg]);
-                setTimeout(() => {
-                    flatListRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-
-                if (msg.sender?._id !== userId) {
-                    await markAsDelivered(msg._id);
-                }
+                dispatch(addMessage(msg));
             }
         });
 
         socket.on("messageDeleted", ({ messageId }) => {
-            setMessages((prev) =>
-                prev.filter((msg) => msg._id !== messageId)
-            );
+            dispatch(deleteMessage(messageId));
         });
 
         socket.on("messageDelivered", ({ messageId, userId }) => {
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg._id === messageId ? {
-                        ...msg, deliveredTo: [...new Set([...(msg.deliveredTo || []), userId]),
-                        ],
-                    } : msg
-                )
-            );
+            dispatch(updateMessage({ _id: messageId, deliveredTo: userId }));
         });
 
         socket.on("messageRead", ({ messageId, userId }) => {
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg._id === messageId ? {
-                        ...msg, readBy: [...new Set([...(msg.readBy || []), userId]),
-                        ],
-                    } : msg
-                )
-            );
+            dispatch(updateMessage({ _id: messageId, readBy: userId }));
         });
 
         return () => {

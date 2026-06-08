@@ -11,7 +11,6 @@ import { useRouter } from "expo-router";
 import { socket } from "@/socket/socket";
 import CreateGroupModal from "../../../components/createGroup";
 
-
 export default function Contacts() {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -23,10 +22,6 @@ export default function Contacts() {
     const Users = useSelector(state => state.users.users || []);
     const filteredUsers = Users.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()));
     const getInitials = (name = "") => name.split(" ").map((n) => n[0]).join("").toUpperCase();
-
-    useEffect(() => {
-        fetchAllUsers();
-    }, []);
 
     const fetchAllUsers = async () => {
         const response = await getAlluser();
@@ -84,8 +79,7 @@ export default function Contacts() {
 
     const toggleUser = (item) => {
         const id = item._id;
-        setSelectedUsers((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-        );
+        setSelectedUsers((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
     };
 
     const handlePress = (item) => {
@@ -95,6 +89,10 @@ export default function Contacts() {
             openChat(item);
         }
     };
+
+    useEffect(() => {
+        fetchAllUsers();
+    }, [dispatch]);
 
     const renderItem = ({ item }) => {
         const isSelected = selectedUsers.includes(item._id);
