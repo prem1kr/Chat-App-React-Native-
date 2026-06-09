@@ -151,18 +151,17 @@ const Chat = () => {
                 <TouchableOpacity activeOpacity={0.8} onLongPress={() => { if (isMyMessage && !item.isTemp) { handleDeleteMessage(item._id); } }}
                     style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
                     <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]}> {item.text} </Text>
-
-                    <View style={styles.timeRow}>
-                        <Text style={styles.timeText}>
-                            {new Date(item.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            })}
-                        </Text>
-
-                        {renderMessageStatus(item)}
-                    </View>
                 </TouchableOpacity>
+                
+                <View style={styles.timeRow}>
+                    <Text style={styles.timeText}>
+                        {new Date(item.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })}
+                    </Text>
+                    {renderMessageStatus(item)}
+                </View>
             </View >
         );
     };

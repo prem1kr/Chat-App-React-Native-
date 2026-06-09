@@ -49,12 +49,15 @@ export default function GroupScreen() {
     if (msgRes?.messages) {
       dispatch(setGroupMessages(msgRes.messages));
 
-      // FIX: run delivery marking safely
-      msgRes.messages.forEach(async (msg) => {
-        if (msg.sender?._id !== id && !msg.deliveredTo?.includes(id)) {
-          await markAsDelivered(msg._id);
-        }
-      });
+      const unreadMessages = msgRes.messages.filter(
+        (msg) =>
+          msg.sender?._id !== id &&
+          !msg.deliveredTo?.includes(id)
+      );
+
+      await Promise.all(
+        unreadMessages.map((msg) => markAsDelivered(msg._id))
+      );
     }
   };
 
@@ -80,15 +83,25 @@ export default function GroupScreen() {
   };
 
 
+  const readProcessed = useRef(false);
 
   useEffect(() => {
-    if (!messages.length) return;
+    if (!messages.length || !userId) return;
+    if (readProcessed.current) return;
 
-    messages.forEach(async (msg) => {
-      if (msg.sender?._id !== userId && !msg.readBy?.includes(userId)) {
-        await markAsRead(msg._id);
-      }
-    });
+    const markReadMessages = async () => {
+      const unread = messages.filter(
+        (msg) =>
+          msg.sender?._id !== userId &&
+          !msg.readBy?.includes(userId)
+      );
+
+      await Promise.all(unread.map((msg) => markAsRead(msg._id)));
+
+      readProcessed.current = true;
+    };
+
+    markReadMessages();
   }, [messages, userId]);
 
   const handleDeleteMessage = (messageId) => {
@@ -144,27 +157,39 @@ export default function GroupScreen() {
   }, []);
 
   const isAdmin = group?.admin?._id === userId;
-
   const renderMessage = ({ item }) => {
     const isMine = item.sender?._id === userId;
+    
+    const renderMessageStatus = (item) => {
+      if (item.sender?._id !== userId) return null;
+      const deliveredCount = (item.deliveredTo || []).filter(id => id !== userId).length;
+      const readCount = (item.readBy || []).filter(id => id !== userId).length;
+      if (readCount > 0) {
+        return <Ionicons name="checkmark-done" size={16} color="#3b82f6" />;
+      }
+      if (deliveredCount > 0) {
+        return <Ionicons name="checkmark-done" size={16} color="#9CA3AF" />;
+      }
+      return <Ionicons name="checkmark" size={16} color="#9CA3AF" />;
+    };
 
     return (
       <View style={[styles.messageWrapper, isMine ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
-        <Text style={styles.senderName}>{isMine ? "You" : item.sender?.name}</Text>
 
-        <TouchableOpacity activeOpacity={0.8} onLongPress={() => {
-          if (item.sender?._id === userId && !item.isTemp) { handleDeleteMessage(item._id); }
-        }}
+        <Text style={styles.senderName}>
+          {isMine ? "You" : item.sender?.name}
+        </Text>
+
+        <TouchableOpacity activeOpacity={0.8} onLongPress={() => { if (item.sender?._id === userId && !item.isTemp) { handleDeleteMessage(item._id); } }}
           style={[styles.messageContainer, isMine ? styles.sent : styles.received]}>
           <Text style={[styles.messageText, isMine && { color: "#fff" }]}>{item.text}</Text>
-
-          <Text style={styles.timeText}>
-            {new Date(item.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
         </TouchableOpacity>
+
+        <View style={styles.timeRow}>
+          <Text style={styles.timeText}>{new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+          {renderMessageStatus(item)}
+        </View>
+
       </View>
     );
   };
