@@ -62,21 +62,12 @@ const Chat = () => {
 
 
     const handleDeleteMessage = (messageId) => {
-        Alert.alert(
-            "Delete Message",
-            "Do you want to delete this message?",
+        Alert.alert("Delete Message", "Do you want to delete this message?",
             [
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
+                { text: "Cancel", style: "cancel" }, {
+                    text: "Delete", style: "destructive", onPress: async () => {
                         try {
                             dispatch(deleteMessage(messageId));
-
                             await deleteMessageApi(messageId);
                         } catch (error) {
                             console.log(error);
@@ -93,22 +84,14 @@ const Chat = () => {
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
-                dispatch(updateChat({ _id: msg.chatId, lastMessage: msg.text, lastMessageTime: msg.createdAt })
-                );
+                dispatch(updateChat({ _id: msg.chatId, lastMessage: msg.text, lastMessageTime: msg.createdAt }));
             }
         });
 
         socket.on("messageDeleted", (data) => {
             dispatch(deleteMessage(data.messageId));
-
             if (data.chatId) {
-                dispatch(
-                    updateChat({
-                        _id: data.chatId,
-                        lastMessage: data.lastMessage,
-                        lastMessageTime: data.lastMessageTime,
-                    })
-                );
+                dispatch(updateChat({ _id: data.chatId, lastMessage: data.lastMessage, lastMessageTime: data.lastMessageTime }));
             }
         });
 
@@ -165,18 +148,8 @@ const Chat = () => {
         return (
             <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
                 <Text style={styles.senderName}>  {isMyMessage ? "You" : item.sender?.name}</Text>
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onLongPress={() => {
-                        if (isMyMessage && !item.isTemp) {
-                            handleDeleteMessage(item._id);
-                        }
-                    }}
-                    style={[
-                        styles.messageContainer,
-                        isMyMessage ? styles.sent : styles.received,
-                    ]}
-                >
+                <TouchableOpacity activeOpacity={0.8} onLongPress={() => { if (isMyMessage && !item.isTemp) { handleDeleteMessage(item._id); } }}
+                    style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
                     <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]}> {item.text} </Text>
 
                     <View style={styles.timeRow}>

@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert, I
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getGroupById, addMember, removeMember, updateGroup, deleteGroup } from "@/hooks/useGroup";
-import { getGroupMessages, sendMessage, deleteMessage as deleteMessageApi } from "@/hooks/useMessage";
+import { getGroupMessages, sendMessage, deleteMessage as deleteMessageApi, markAsDelivered, markAsRead, } from "@/hooks/useMessage";
 import { socket } from "@/socket/socket";
 import AppHeader from "../../../components/appHeader";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,18 +38,23 @@ export default function GroupScreen() {
   const initialize = async () => {
     const id = await AsyncStorage.getItem("userId");
     setUserId(id);
+
     const groupRes = await getGroupById(groupId);
     const msgRes = await getGroupMessages(groupId);
-    for (const msg of msgRes.messages) {
-      if (msg.sender?._id !== id && !msg.deliveredTo?.includes(id)) {
-        await markAsDelivered(msg._id);
-      }
-    }
+
     if (groupRes?.group) {
       setGroup(groupRes.group);
     }
+
     if (msgRes?.messages) {
       dispatch(setGroupMessages(msgRes.messages));
+
+      // FIX: run delivery marking safely
+      msgRes.messages.forEach(async (msg) => {
+        if (msg.sender?._id !== id && !msg.deliveredTo?.includes(id)) {
+          await markAsDelivered(msg._id);
+        }
+      });
     }
   };
 
@@ -79,42 +84,23 @@ export default function GroupScreen() {
   useEffect(() => {
     if (!messages.length) return;
 
-    const markRead = async () => {
-      for (const msg of messages) {
-        if (
-          msg.sender?._id !== userId &&
-          !msg.readBy?.includes(userId)
-        ) {
-          await markAsRead(msg._id);
-        }
+    messages.forEach(async (msg) => {
+      if (msg.sender?._id !== userId && !msg.readBy?.includes(userId)) {
+        await markAsRead(msg._id);
       }
-    };
-
-    markRead();
+    });
   }, [messages, userId]);
 
   const handleDeleteMessage = (messageId) => {
     Alert.alert("Delete Message", "Do you want to delete this message?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
+      { text: "Cancel", style: "cancel" }, {
+        text: "Delete", style: "destructive", onPress: async () => {
           try {
             const msg = messages.find((m) => m._id === messageId);
-
             dispatch(deleteGroupMessage(messageId));
-
             if (msg) {
-              dispatch(
-                updateChat({
-                  _id: groupId,
-                  lastMessage: msg.text,
-                  lastMessageTime: msg.createdAt,
-                })
-              );
+              dispatch(updateChat({ _id: groupId, lastMessage: msg.text, lastMessageTime: msg.createdAt }));
             }
-
             await deleteMessageApi(messageId);
           } catch (error) {
             console.log(error);
@@ -133,33 +119,15 @@ export default function GroupScreen() {
 
     socket.on("groupMessageDeleted", (data) => {
       dispatch(deleteGroupMessage(data.messageId));
-
-      dispatch(
-        updateChat({
-          _id: data.groupId,
-          lastMessage: data.lastMessage,
-          lastMessageTime: data.lastMessageTime,
-        })
-      );
+      dispatch(updateChat({ _id: data.groupId, lastMessage: data.lastMessage, lastMessageTime: data.lastMessageTime }));
     });
 
-    // ✅ ADD THIS
     socket.on("messageDelivered", ({ messageId, userId }) => {
-      dispatch(
-        updateGroupMessage({
-          _id: messageId,
-          deliveredTo: userId,
-        })
-      );
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: userId }));
     });
 
     socket.on("messageRead", ({ messageId, userId }) => {
-      dispatch(
-        updateGroupMessage({
-          _id: messageId,
-          readBy: userId,
-        })
-      );
+      dispatch(updateGroupMessage({ _id: messageId, readBy: userId }));
     });
 
     return () => {
@@ -181,31 +149,14 @@ export default function GroupScreen() {
     const isMine = item.sender?._id === userId;
 
     return (
-      <View
-        style={[
-          styles.messageWrapper,
-          isMine ? styles.myMessageWrapper : styles.otherMessageWrapper,
-        ]}
-      >
-        <Text style={styles.senderName}>
-          {isMine ? "You" : item.sender?.name}
-        </Text>
+      <View style={[styles.messageWrapper, isMine ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
+        <Text style={styles.senderName}>{isMine ? "You" : item.sender?.name}</Text>
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onLongPress={() => {
-            if (item.sender?._id === userId && !item.isTemp) {
-              handleDeleteMessage(item._id);
-            }
-          }}
-          style={[
-            styles.messageContainer,
-            isMine ? styles.sent : styles.received,
-          ]}
-        >
-          <Text style={[styles.messageText, isMine && { color: "#fff" }]}>
-            {item.text}
-          </Text>
+        <TouchableOpacity activeOpacity={0.8} onLongPress={() => {
+          if (item.sender?._id === userId && !item.isTemp) { handleDeleteMessage(item._id); }
+        }}
+          style={[styles.messageContainer, isMine ? styles.sent : styles.received]}>
+          <Text style={[styles.messageText, isMine && { color: "#fff" }]}>{item.text}</Text>
 
           <Text style={styles.timeText}>
             {new Date(item.createdAt).toLocaleTimeString([], {
