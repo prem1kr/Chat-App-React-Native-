@@ -127,6 +127,7 @@ export default function GroupScreen() {
     socket.emit("joinGroup", groupId);
 
     socket.on("groupMessage", (message) => {
+      if (message.sender?._id === userId) return;
       dispatch(addGroupMessage(message));
     });
 
@@ -159,7 +160,7 @@ export default function GroupScreen() {
   const isAdmin = group?.admin?._id === userId;
   const renderMessage = ({ item }) => {
     const isMine = item.sender?._id === userId;
-    
+
     const renderMessageStatus = (item) => {
       if (item.sender?._id !== userId) return null;
       const deliveredCount = (item.deliveredTo || []).filter(id => id !== userId).length;

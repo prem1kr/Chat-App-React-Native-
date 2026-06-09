@@ -33,7 +33,6 @@ export default function Groups() {
             const response = await getAllGroups();
             if (response?.success) {
                 setGroups(response.groups || []);
-                console.log(response.groups)
             }
         } catch (error) {
             console.log(error);

@@ -1,8 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from "react-native";
+import LoadingButton from "./loadingButton";
 
 export default function CreateGroupModal({ visible, onClose, groupName, setGroupName, groupImage, setGroupImage, onCreate }) {
-
+  const [loading, setLoading] = useState(false);
+  const handleCreate = async () => {
+    try {
+      setLoading(true);
+      await onCreate(); 
+      setLoading(false);
+      onClose();
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  }; 
+  
   return (
     <Modal visible={visible} transparent animationType="slide" >
       <View style={styles.modalOverlay}>
@@ -19,9 +32,7 @@ export default function CreateGroupModal({ visible, onClose, groupName, setGroup
               <Text style={styles.btnText}>  Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.createBtn} onPress={onCreate} >
-              <Text style={styles.btnText}> Create  </Text>
-            </TouchableOpacity>
+            <LoadingButton style={styles.createBtn} onPress={handleCreate} title={"create"} loading={loading} />
           </View>
 
         </View>
