@@ -4,88 +4,88 @@ import messageModel from "../models/messageModel.js";
 import { io } from "../socket/socket.js";
 
 
-export const sendMessage = async (req, res) => {
-  try {
-    const sender = req.user.id;
-    const { chatId, groupId, text, messageType, mediaUrl } = req.body;
+// export const sendMessage = async (req, res) => {
+//   try {
+//     const sender = req.user.id;
+//     const { chatId, groupId, text, messageType, mediaUrl } = req.body;
 
-    if (!chatId && !groupId) {
-      return res.status(400).json({ success: false, message: "chatId or groupId is required" });
-    }
+//     if (!chatId && !groupId) {
+//       return res.status(400).json({ success: false, message: "chatId or groupId is required" });
+//     }
 
-    const message = await messageModel.create({
-      sender,
-      chatId: chatId || null,
-      groupId: groupId || null,
-      text,
-      messageType: messageType || "text",
-      mediaUrl,
-      deliveredTo: [sender],
-      readBy: [sender],
-    });
+//     const message = await messageModel.create({
+//       sender,
+//       chatId: chatId || null,
+//       groupId: groupId || null,
+//       text,
+//       messageType: messageType || "text",
+//       mediaUrl,
+//       deliveredTo: [sender],
+//       readBy: [sender],
+//     });
 
-    const populatedMessage = await messageModel.findById(message._id).populate("sender", "name profilePic");
+//     const populatedMessage = await messageModel.findById(message._id).populate("sender", "name profilePic");
 
-    const updateData = {
-      lastMessage: text || messageType,
-      lastMessageTime: new Date(),
-    };
-    if (chatId) {
-      await chatModel.findByIdAndUpdate(chatId, updateData);
-    }
-    if (groupId) {
-      await groupModel.findByIdAndUpdate(groupId, updateData);
-    }
-
-
-    if (chatId) {
-      const chat = await chatModel.findById(chatId);
-      const receiverId = chat.participants.find((id) => id.toString() !== sender);
-      io.to(receiverId.toString()).emit("newMessage", populatedMessage);
-      io.to(sender.toString()).emit("messageSent", populatedMessage);
-    }
-
-    if (groupId) {
-      const group = await groupModel.findById(groupId);
-      group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessage", populatedMessage);
-      });
-    }
-
-    return res.status(201).json({ success: true, data: populatedMessage });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
-
-  }
-};
+//     const updateData = {
+//       lastMessage: text || messageType,
+//       lastMessageTime: new Date(),
+//     };
+//     if (chatId) {
+//       await chatModel.findByIdAndUpdate(chatId, updateData);
+//     }
+//     if (groupId) {
+//       await groupModel.findByIdAndUpdate(groupId, updateData);
+//     }
 
 
-export const getChatMessages = async (req, res) => {
-  try {
-    const { chatId } = req.params;
+//     if (chatId) {
+//       const chat = await chatModel.findById(chatId);
+//       const receiverId = chat.participants.find((id) => id.toString() !== sender);
+//       io.to(receiverId.toString()).emit("newMessage", populatedMessage);
+//       io.to(sender.toString()).emit("messageSent", populatedMessage);
+//     }
 
-    const messages = await messageModel.find({ chatId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
-    return res.status(200).json({ success: true, messages });
+//     if (groupId) {
+//       const group = await groupModel.findById(groupId);
+//       group.members.forEach((memberId) => {
+//         io.to(memberId.toString()).emit("groupMessage", populatedMessage);
+//       });
+//     }
 
-  } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+//     return res.status(201).json({ success: true, data: populatedMessage });
+//   } catch (error) {
+//     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
-  }
-};
+//   }
+// };
 
 
-export const getGroupMessages = async (req, res) => {
-  try {
-    const { groupId } = req.params;
+// export const getChatMessages = async (req, res) => {
+//   try {
+//     const { chatId } = req.params;
 
-    const messages = await messageModel.find({ groupId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
-    return res.status(200).json({ success: true, messages });
+//     const messages = await messageModel.find({ chatId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
+//     return res.status(200).json({ success: true, messages });
 
-  } catch (error) {
-    return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+//   } catch (error) {
+//     return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
 
-  }
-};
+//   }
+// };
+
+
+// export const getGroupMessages = async (req, res) => {
+//   try {
+//     const { groupId } = req.params;
+
+//     const messages = await messageModel.find({ groupId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
+//     return res.status(200).json({ success: true, messages });
+
+//   } catch (error) {
+//     return res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+//   }
+// };
 
 
 export const markAsDelivered = async (req, res) => {
@@ -136,59 +136,268 @@ export const markAsRead = async (req, res) => {
 };
 
 
+// export const deleteMessage = async (req, res) => {
+//   try {
+//     const { messageId } = req.params;
+//     const userId = req.user.id;
+//     const message = await messageModel.findById(messageId);
+
+//     if (!message) {
+//       return res.status(404).json({ success: false, message: "Message not found" });
+//     }
+
+//     if (message.sender.toString() !== userId) {
+//       return res.status(403).json({ success: false, message: "Not authorized" });
+//     }
+
+//     await messageModel.findByIdAndDelete(messageId);
+
+//     if (message.chatId) {
+//       const latestMessage = await messageModel.findOne({ chatId: message.chatId }).sort({ createdAt: -1 });
+
+//       const payload = {
+//         messageId,
+//         chatId: message.chatId,
+//         lastMessage: latestMessage?.text || "No messages yet",
+//         lastMessageTime: latestMessage?.createdAt || null,
+//       };
+
+//       await chatModel.findByIdAndUpdate(message.chatId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
+//       const chat = await chatModel.findById(message.chatId);
+//       const receiverId = chat.participants.find((id) => id.toString() !== userId);
+//       io.to(receiverId.toString()).emit("messageDeleted", payload);
+//       io.to(userId.toString()).emit("messageDeleted", payload);
+//     }
+
+
+//     if (message.groupId) {
+//       const latestMessage = await messageModel.findOne({ groupId: message.groupId }).sort({ createdAt: -1 });
+//       const payload = {
+//         messageId,
+//         groupId: message.groupId,
+//         lastMessage: latestMessage?.text || "No messages yet",
+//         lastMessageTime: latestMessage?.createdAt || null,
+//       };
+
+//       await groupModel.findByIdAndUpdate(message.groupId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
+//       const group = await groupModel.findById(message.groupId);
+//       group.members.forEach((memberId) => {
+//         io.to(memberId.toString()).emit("groupMessageDeleted", payload)
+//       });
+//     }
+
+//     return res.status(200).json({ success: true, message: "Message deleted successfully" });
+
+//   } catch (error) {
+//     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+//   }
+// };
+
+/* =========================
+   SEND MESSAGE
+========================= */
+export const sendMessage = async (req, res) => {
+  try {
+    const sender = req.user.id;
+    const { chatId, groupId, text, messageType, mediaUrl } = req.body;
+
+    if (!chatId && !groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "chatId or groupId is required",
+      });
+    }
+
+    const message = await messageModel.create({
+      sender,
+      chatId: chatId || null,
+      groupId: groupId || null,
+      text,
+      messageType: messageType || "text",
+      mediaUrl,
+      deliveredTo: [sender],
+      readBy: [sender],
+    });
+
+    const populatedMessage = await messageModel
+      .findById(message._id)
+      .populate("sender", "name profilePic");
+
+    const updateData = {
+      lastMessage: text || messageType,
+      lastMessageTime: new Date(),
+    };
+
+    if (chatId) {
+      await chatModel.findByIdAndUpdate(chatId, updateData);
+
+      const chat = await chatModel.findById(chatId);
+      const receiverId = chat.participants.find(
+        (id) => id.toString() !== sender
+      );
+
+      io.to(receiverId.toString()).emit("newMessage", populatedMessage);
+      io.to(sender.toString()).emit("messageSent", populatedMessage);
+    }
+
+    if (groupId) {
+      await groupModel.findByIdAndUpdate(groupId, updateData);
+
+      const group = await groupModel.findById(groupId);
+      group.members.forEach((memberId) => {
+        io.to(memberId.toString()).emit("groupMessage", populatedMessage);
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: populatedMessage,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+/* =========================
+   GET CHAT MESSAGES
+========================= */
+export const getChatMessages = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    const messages = await messageModel
+      .find({ chatId })
+      .populate("sender", "name profilePic")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({ success: true, messages });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+/* =========================
+   GET GROUP MESSAGES
+========================= */
+export const getGroupMessages = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const messages = await messageModel
+      .find({ groupId })
+      .populate("sender", "name profilePic")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({ success: true, messages });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+/* =========================
+   DELETE MESSAGE (CHAT + GROUP FIXED)
+========================= */
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user.id;
+
     const message = await messageModel.findById(messageId);
 
     if (!message) {
-      return res.status(404).json({ success: false, message: "Message not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Message not found",
+      });
     }
 
     if (message.sender.toString() !== userId) {
-      return res.status(403).json({ success: false, message: "Not authorized" });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
     }
 
     await messageModel.findByIdAndDelete(messageId);
 
+    /* =========================
+       CHAT DELETE LOGIC
+    ========================= */
     if (message.chatId) {
-      const latestMessage = await messageModel.findOne({ chatId: message.chatId }).sort({ createdAt: -1 });
+      const latestMessage = await messageModel
+        .findOne({ chatId: message.chatId })
+        .sort({ createdAt: -1 });
 
       const payload = {
         messageId,
         chatId: message.chatId,
-        lastMessage: latestMessage?.text || "No messages yet",
+        lastMessage: latestMessage?.text || "",
         lastMessageTime: latestMessage?.createdAt || null,
       };
 
-      await chatModel.findByIdAndUpdate(message.chatId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
+      await chatModel.findByIdAndUpdate(message.chatId, {
+        lastMessage: payload.lastMessage,
+        lastMessageTime: payload.lastMessageTime,
+      });
+
       const chat = await chatModel.findById(message.chatId);
-      const receiverId = chat.participants.find((id) => id.toString() !== userId);
+
+      const receiverId = chat.participants.find(
+        (id) => id.toString() !== userId
+      );
+
       io.to(receiverId.toString()).emit("messageDeleted", payload);
       io.to(userId.toString()).emit("messageDeleted", payload);
     }
 
-
+    /* =========================
+       GROUP DELETE LOGIC
+    ========================= */
     if (message.groupId) {
-      const latestMessage = await messageModel.findOne({ groupId: message.groupId }).sort({ createdAt: -1 });
+      const latestMessage = await messageModel
+        .findOne({ groupId: message.groupId })
+        .sort({ createdAt: -1 });
+
       const payload = {
         messageId,
         groupId: message.groupId,
-        lastMessage: latestMessage?.text || "No messages yet",
+        lastMessage: latestMessage?.text || "",
         lastMessageTime: latestMessage?.createdAt || null,
       };
 
-      await groupModel.findByIdAndUpdate(message.groupId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
+      await groupModel.findByIdAndUpdate(message.groupId, {
+        lastMessage: payload.lastMessage,
+        lastMessageTime: payload.lastMessageTime,
+      });
+
       const group = await groupModel.findById(message.groupId);
+
       group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageDeleted", payload)
+        io.to(memberId.toString()).emit("groupMessageDeleted", payload);
       });
     }
 
-    return res.status(200).json({ success: true, message: "Message deleted successfully" });
-
+    return res.status(200).json({
+      success: true,
+      message: "Message deleted successfully",
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
