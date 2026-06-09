@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
+import { userInfo } from "../hooks/useAuth";
+import { setUser } from "../redux/slices/userSlice";
 
 const AppHeader = ({ title = "P Chat", children, isAdmin = false, onMenuPress, onMembers }) => {
+    const dispatch = useDispatch();
     const user = useSelector((state) => state.user.user);
 
     const getInitials = (name) => {
@@ -12,6 +15,17 @@ const AppHeader = ({ title = "P Chat", children, isAdmin = false, onMenuPress, o
         const parts = name.split(" ");
         return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
     };
+
+    const fetchUser = async () => {
+        const response = await userInfo();
+        if (response?.success) {
+            dispatch(setUser(response.user));
+        }
+    }
+
+    useEffect(() => {
+        fetchUser();
+    }, []);
 
     return (
         <LinearGradient colors={["#4facfe", "#7b5cff"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.container}>

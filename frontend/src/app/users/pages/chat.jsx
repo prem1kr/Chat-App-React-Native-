@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
 import AppHeader from "../../../components/appHeader";
 import { socket } from "@/socket/socket";
-import { getChatMessages, sendMessage, markAsDelivered, markAsRead } from "../../../hooks/useMessage";
+import { getChatMessages, sendMessage, markAsDelivered, markAsRead, deleteMessage as deleteMessageApi } from "../../../hooks/useMessage";
 import MembersModal from "../../../components/memebersModal";
 import { addMessage, deleteMessage, setChatMessages, updateMessage } from '../../../redux/slices/chatMessages';
+import { updateChat } from "../../../redux/slices/chatHomeSlice";
 
 const Chat = () => {
     const dispatch = useDispatch();
@@ -37,36 +38,78 @@ const Chat = () => {
 
     const send = async () => {
         if (!message.trim()) return;
-
+        const messageText = message.trim();
         const tempMsg = {
             _id: Date.now().toString(),
-            text: message,
+            text: messageText,
             sender: { _id: userId, name: userName },
-            createdAt: new Date(),
+            chatId,
+            createdAt: new Date().toISOString(),
             deliveredTo: [],
             readBy: [],
+            isTemp: true,
         };
+
         dispatch(addMessage(tempMsg));
+        dispatch(updateChat({ _id: chatId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
         setMessage("");
-        await sendMessage({ chatId, text: message, messageType: "text" });
+        await sendMessage({ chatId, text: messageText, messageType: "text" });
 
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
     };
 
+
+    const handleDeleteMessage = (messageId) => {
+        Alert.alert(
+            "Delete Message",
+            "Do you want to delete this message?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            dispatch(deleteMessage(messageId));
+
+                            await deleteMessageApi(messageId);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     useEffect(() => {
         loadMessages();
         socket.emit("joinChat", chatId);
-
-        socket.on("newMessage", async (msg) => {
+        socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
+                dispatch(updateChat({ _id: msg.chatId, lastMessage: msg.text, lastMessageTime: msg.createdAt })
+                );
             }
         });
 
-        socket.on("messageDeleted", ({ messageId }) => {
-            dispatch(deleteMessage(messageId));
+        socket.on("messageDeleted", (data) => {
+            dispatch(deleteMessage(data.messageId));
+
+            if (data.chatId) {
+                dispatch(
+                    updateChat({
+                        _id: data.chatId,
+                        lastMessage: data.lastMessage,
+                        lastMessageTime: data.lastMessageTime,
+                    })
+                );
+            }
         });
 
         socket.on("messageDelivered", ({ messageId, userId }) => {
@@ -103,6 +146,7 @@ const Chat = () => {
     }, [messages, userId]);
 
 
+
     const renderMessageStatus = (item) => {
         if (item.sender?._id !== userId) return null;
         const isRead = item.readBy?.length > 0 && item.readBy.some((id) => id !== userId);
@@ -121,22 +165,32 @@ const Chat = () => {
         return (
             <View style={[styles.messageWrapper, isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
                 <Text style={styles.senderName}>  {isMyMessage ? "You" : item.sender?.name}</Text>
-
-                <View style={[styles.messageContainer, isMyMessage ? styles.sent : styles.received]}>
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onLongPress={() => {
+                        if (isMyMessage && !item.isTemp) {
+                            handleDeleteMessage(item._id);
+                        }
+                    }}
+                    style={[
+                        styles.messageContainer,
+                        isMyMessage ? styles.sent : styles.received,
+                    ]}
+                >
                     <Text style={[styles.messageText, isMyMessage && { color: "#fff" }]}> {item.text} </Text>
-                </View>
 
-                <View style={styles.timeRow}>
-                    <Text style={styles.timeText}>
-                        {new Date(item.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })}
-                    </Text>
+                    <View style={styles.timeRow}>
+                        <Text style={styles.timeText}>
+                            {new Date(item.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </Text>
 
-                    {renderMessageStatus(item)}
-                </View>
-            </View>
+                        {renderMessageStatus(item)}
+                    </View>
+                </TouchableOpacity>
+            </View >
         );
     };
 

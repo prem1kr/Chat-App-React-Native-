@@ -8,6 +8,8 @@ import { getUserGroups } from "../../../hooks/useGroup";
 import { useRouter } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
 import { addChat, removeChat, setChats, updateChat } from '../../../redux/slices/chatHomeSlice';
+import { userInfo } from '../../../hooks/useAuth';
+import { setUser } from '../../../redux/slices/userSlice'
 
 export default function UserHome() {
     const dispatch = useDispatch();
@@ -21,26 +23,36 @@ export default function UserHome() {
         try {
             const [chatRes, groupRes] = await Promise.all([getChatList(), getUserGroups()]);
             const chats = chatRes?.chats?.map((chat) => ({ ...chat, type: "chat" })) || [];
+            chats.forEach(chat => { socket.emit("joinChat", chat._id) });
             const groups = groupRes?.groups?.map((group) => ({ ...group, type: "group" })) || [];
-            const merged = [...chats, ...groups].sort((a, b) =>
-                new Date(b.lastMessageTime || b.updatedAt) -
-                new Date(a.lastMessageTime || a.updatedAt)
-            );
-            dispatch(setChats(merged));
+            groups.forEach(group => { socket.emit("joinGroup", group._id) });
+            dispatch(setChats([...chats, ...groups]));
         } catch (error) {
             console.log(error);
         }
     };
 
+    const fetchUser = async () => {
+        const response = await userInfo();
+        if (response?.success) {
+            dispatch(setUser(response.user));
+        }
+    }
+
     useEffect(() => {
         loadData();
+        fetchUser();
+    }, []);
 
+
+    useEffect(() => {
         const handleChatCreated = (data) => {
             dispatch(addChat(data.chat));
         };
 
         const handleGroupCreated = (data) => {
-            dispatch(addChat({ ...data.group, type: "group" }));
+            if (!data?._id) return;
+            dispatch(addChat({ ...data, type: "group" }));
         };
 
         const handleGroupUpdated = (data) => {
@@ -52,7 +64,13 @@ export default function UserHome() {
         };
 
         const handleNewMessage = (data) => {
+            console.log("NEW MESSAGE EVENT:", data);
+
             dispatch(updateChat(data.chat));
+        };
+
+        const handleGroupMessage = (message) => {
+            dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
         };
 
         socket.on("chatCreated", handleChatCreated);
@@ -60,6 +78,7 @@ export default function UserHome() {
         socket.on("groupUpdated", handleGroupUpdated);
         socket.on("groupDeleted", handleGroupDeleted);
         socket.on("newMessage", handleNewMessage);
+        socket.on("groupMessage", handleGroupMessage);
 
         return () => {
             socket.off("chatCreated", handleChatCreated);
@@ -67,31 +86,50 @@ export default function UserHome() {
             socket.off("groupUpdated", handleGroupUpdated);
             socket.off("groupDeleted", handleGroupDeleted);
             socket.off("newMessage", handleNewMessage);
+            socket.off("groupMessage", handleGroupMessage);
         };
     }, [dispatch]);
 
     const getName = (item) => {
-        if (item.type === "group") {
-            return item.groupName;
+        if (item?.type === "group") {
+            return item?.groupName;
         }
-        const otherUser = item.participants?.find(user => user._id !== currentUserId);
+        const otherUser = item?.participants?.find(user => user?._id !== currentUserId);
         return otherUser?.name || "Unknown"
     };
 
+
     const getAvatar = (item) => {
-        const name = getName(item);
-        return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+        const name = getName(item) || "Unknown";
+        return name.split(" ").map((n) => n?.[0] || "").join("").toUpperCase();
     };
 
     const formatTime = (time) => {
         if (!time) return "";
-        return new Date(time).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
+        const messageDate = new Date(time);
+        const now = new Date();
+        const diffMs = now - messageDate;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        
+        if (diffHours < 24) {
+            return messageDate.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+        if (diffDays < 7) {
+            return messageDate.toLocaleDateString([], {
+                weekday: "short",
+            });
+        }
+        return messageDate.toLocaleDateString([], {
+            day: "2-digit",
+            month: "short",
         });
     };
 
-    const filteredItems = chatsGroups.filter((item) => getName(item).toLowerCase().includes(search.toLowerCase()));
+    const filteredItems = chatsGroups.filter((item) => (getName(item) || "").toLowerCase().includes((search || "").toLowerCase()));
 
     const openItem = useCallback(
         (item) => {

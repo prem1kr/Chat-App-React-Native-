@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert, I
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getGroupById, addMember, removeMember, updateGroup, deleteGroup } from "@/hooks/useGroup";
-import { getGroupMessages, sendMessage, } from "@/hooks/useMessage";
+import { getGroupMessages, sendMessage, deleteMessage as deleteMessageApi } from "@/hooks/useMessage";
 import { socket } from "@/socket/socket";
 import AppHeader from "../../../components/appHeader";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import MembersModal from "../../../components/memebersModal";
 import { useDispatch, useSelector } from "react-redux";
 import { setGroupMessages, addGroupMessage, updateGroupMessage, deleteGroupMessage, clearGroupMessages } from "../../../redux/slices/groupMessage";
 import { setUsers } from '../../../redux/slices/usersSlice';
+import { updateChat } from "../../../redux/slices/chatHomeSlice";
 
 export default function GroupScreen() {
   const dispatch = useDispatch();
@@ -39,11 +40,9 @@ export default function GroupScreen() {
     setUserId(id);
     const groupRes = await getGroupById(groupId);
     const msgRes = await getGroupMessages(groupId);
-
     if (groupRes?.group) {
       setGroup(groupRes.group);
     }
-
     if (msgRes?.messages) {
       dispatch(setGroupMessages(msgRes.messages));
     }
@@ -51,25 +50,74 @@ export default function GroupScreen() {
 
   const handleSend = async () => {
     if (!text.trim()) return;
-    const tempMessage = { _id: Date.now().toString(), text, sender: { _id: userId }, createdAt: new Date().toISOString() };
+    const messageText = text.trim();
+    const tempMsg = {
+      _id: Date.now().toString(),
+      text: messageText,
+      sender: { _id: userId, name: "You" },
+      groupId,
+      createdAt: new Date().toISOString(),
+      deliveredTo: [],
+      readBy: [],
+      isTemp: true,
+    };
 
-    dispatch(addGroupMessage(tempMessage));
-    const messageText = text;
+    dispatch(addGroupMessage(tempMsg));
+    dispatch(updateChat({ _id: groupId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
     setText("");
     await sendMessage({ groupId, text: messageText, messageType: "text" });
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+  };
+
+
+  const handleDeleteMessage = (messageId) => {
+    Alert.alert(
+      "Delete Message",
+      "Do you want to delete this message?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            dispatch(deleteGroupMessage(messageId));
+            dispatch(
+              updateChat({
+                _id: groupId,
+                lastMessage: messageText,
+                lastMessageTime: tempMsg.createdAt,
+              })
+            );
+            try {
+              await deleteMessageApi(messageId);
+            } catch (error) {
+              console.log(error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
+
     socket.on("groupMessage", (message) => {
       dispatch(addGroupMessage(message));
     });
 
-    socket.on("groupMessageDeleted", ({ messageId }) => {
-      dispatch(deleteGroupMessage(messageId));
+    socket.on("groupMessageDeleted", (data) => {
+      dispatch(deleteGroupMessage(data.messageId));
+
+      dispatch(
+        updateChat({
+          _id: data.groupId,
+          lastMessage: data.lastMessage,
+          lastMessageTime: data.lastMessageTime,
+        })
+      );
     });
 
     socket.on("groupMessageUpdated", (message) => {
@@ -98,14 +146,26 @@ export default function GroupScreen() {
       <View style={[styles.messageWrapper, isMine ? styles.myMessageWrapper : styles.otherMessageWrapper,]}>
         <Text style={styles.senderName}> {isMine ? "You" : item.sender?.name}  </Text>
 
-        <View style={[styles.messageContainer, isMine ? styles.sent : styles.received]}>
-          <Text style={[styles.messageText, isMine && { color: "#fff" }]}> {item.text}</Text>
-        </View>
+        <TouchableOpacity
+          onLongPress={() => {
+            if (
+              item.sender?._id === userId &&
+              !item.isTemp
+            ) {
+              handleDeleteMessage(item._id);
+            }
+          }}
+          activeOpacity={0.8}
+          style={[
+            styles.messageContainer,
+            isMyMessage ? styles.myMessage : styles.otherMessage,
+          ]}
+        >          <Text style={[styles.messageText, isMine && { color: "#fff" }]}> {item.text}</Text>
 
-        <Text style={styles.timeText}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </Text>
-
+          <Text style={styles.timeText}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -426,5 +486,5 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 5,
   },
-  
+
 });

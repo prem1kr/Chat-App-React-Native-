@@ -3,6 +3,7 @@ import groupModel from "../models/groupModel.js";
 import messageModel from "../models/messageModel.js";
 import { io } from "../socket/socket.js";
 
+
 export const sendMessage = async (req, res) => {
   try {
     const sender = req.user.id;
@@ -139,8 +140,8 @@ export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user.id;
-
     const message = await messageModel.findById(messageId);
+
     if (!message) {
       return res.status(404).json({ success: false, message: "Message not found" });
     }
@@ -152,22 +153,42 @@ export const deleteMessage = async (req, res) => {
     await messageModel.findByIdAndDelete(messageId);
 
     if (message.chatId) {
+      const latestMessage = await messageModel.findOne({ chatId: message.chatId }).sort({ createdAt: -1 });
+
+      const payload = {
+        messageId,
+        chatId: message.chatId,
+        lastMessage: latestMessage?.text || "No messages yet",
+        lastMessageTime: latestMessage?.createdAt || null,
+      };
+
+      await chatModel.findByIdAndUpdate(message.chatId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
       const chat = await chatModel.findById(message.chatId);
       const receiverId = chat.participants.find((id) => id.toString() !== userId);
-      io.to(receiverId.toString()).emit("messageDeleted", { messageId });
-      io.to(userId.toString()).emit("messageDeleted", { messageId });
+      io.to(receiverId.toString()).emit("messageDeleted", payload);
+      io.to(userId.toString()).emit("messageDeleted", payload);
     }
 
+
     if (message.groupId) {
+      const latestMessage = await messageModel.findOne({ groupId: message.groupId }).sort({ createdAt: -1 });
+      const payload = {
+        messageId,
+        groupId: message.groupId,
+        lastMessage: latestMessage?.text || "No messages yet",
+        lastMessageTime: latestMessage?.createdAt || null,
+      };
+
+      await groupModel.findByIdAndUpdate(message.groupId, { lastMessage: payload.lastMessage, lastMessageTime: payload.lastMessageTime });
       const group = await groupModel.findById(message.groupId);
       group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageDeleted", { messageId });
+        io.to(memberId.toString()).emit("groupMessageDeleted", payload)
       });
     }
 
     return res.status(200).json({ success: true, message: "Message deleted successfully" });
+
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
-
   }
 };
