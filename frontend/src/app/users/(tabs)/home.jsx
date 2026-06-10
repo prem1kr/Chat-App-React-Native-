@@ -48,11 +48,13 @@ export default function UserHome() {
     useEffect(() => {
         const handleChatCreated = (data) => {
             dispatch(addChat(data.chat));
+            dispatch(updateChat(data.chat));
         };
 
         const handleGroupCreated = (data) => {
             if (!data?._id) return;
             dispatch(addChat({ ...data, type: "group" }));
+            dispatch(updateChat({ ...data, type: "group" }))
         };
 
         const handleGroupUpdated = (data) => {
@@ -64,13 +66,16 @@ export default function UserHome() {
         };
 
         const handleNewMessage = (data) => {
-            console.log("NEW MESSAGE EVENT:", data);
-
             dispatch(updateChat(data.chat));
+
         };
 
         const handleGroupMessage = (message) => {
             dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
+        };
+
+        const handleChatMessage = (message) => {
+            dispatch(updateChat({ _id: message.chatId, lastMessage: message.text, lastMessageTime: message.createdAt }));
         };
 
         socket.on("chatCreated", handleChatCreated);
@@ -87,6 +92,7 @@ export default function UserHome() {
             socket.off("groupDeleted", handleGroupDeleted);
             socket.off("newMessage", handleNewMessage);
             socket.off("groupMessage", handleGroupMessage);
+
         };
     }, [dispatch]);
 
@@ -111,7 +117,7 @@ export default function UserHome() {
         const diffMs = now - messageDate;
         const diffHours = diffMs / (1000 * 60 * 60);
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
-        
+
         if (diffHours < 24) {
             return messageDate.toLocaleTimeString([], {
                 hour: "2-digit",

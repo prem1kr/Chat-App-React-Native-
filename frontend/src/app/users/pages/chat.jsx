@@ -84,7 +84,6 @@ const Chat = () => {
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
-                dispatch(updateChat({ _id: msg.chatId, lastMessage: msg.text, lastMessageTime: msg.createdAt }));
             }
         });
 

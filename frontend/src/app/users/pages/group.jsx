@@ -76,6 +76,7 @@ export default function GroupScreen() {
       isTemp: true,
     };
 
+    dispatch(addGroupMessage(tempMsg));
     dispatch(updateChat({ _id: groupId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
     setText("");
     await sendMessage({ groupId, text: messageText, messageType: "text" });
@@ -124,10 +125,10 @@ export default function GroupScreen() {
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
-
     socket.on("groupMessage", (message) => {
       if (message.sender?._id === userId) return;
-      dispatch(addGroupMessage(message));
+      dispatch(updateGroupMessage({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt })
+      );
     });
 
     socket.on("groupMessageDeleted", (data) => {
