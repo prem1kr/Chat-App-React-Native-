@@ -24,7 +24,7 @@ export default function Welcome() {
           }
           const user = JSON.parse(storedUser);
           if (user.role === "admin") {
-            router.replace('/admin/home');
+            router.replace('/admin/dashboard');
           } else {
             router.replace('/users/home');
           }
