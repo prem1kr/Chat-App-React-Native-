@@ -51,13 +51,14 @@ export default AppHeader;
 
 const styles = StyleSheet.create({
     container: {
-        height: 70,
+        height: 80,
         paddingHorizontal: 18,
         flexDirection: "row",
         alignItems: "center",
         borderBottomLeftRadius: 22,
         borderTopRightRadius: 22,
         elevation: 10,
+        paddingTop:20
     },
 
     logo: {

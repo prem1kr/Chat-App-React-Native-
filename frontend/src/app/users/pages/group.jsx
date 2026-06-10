@@ -48,16 +48,10 @@ export default function GroupScreen() {
 
     if (msgRes?.messages) {
       dispatch(setGroupMessages(msgRes.messages));
-
       const unreadMessages = msgRes.messages.filter(
-        (msg) =>
-          msg.sender?._id !== id &&
-          !msg.deliveredTo?.includes(id)
+        (msg) => msg.sender?._id !== id && !msg.deliveredTo?.includes(id)
       );
-
-      await Promise.all(
-        unreadMessages.map((msg) => markAsDelivered(msg._id))
-      );
+      await Promise.all(unreadMessages.map((msg) => markAsDelivered(msg._id)));
     }
   };
 
@@ -97,7 +91,6 @@ export default function GroupScreen() {
       );
 
       await Promise.all(unread.map((msg) => markAsRead(msg._id)));
-
       readProcessed.current = true;
     };
 

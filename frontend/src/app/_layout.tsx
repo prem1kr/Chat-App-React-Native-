@@ -12,24 +12,27 @@ export default function RootLayout() {
   function AppInitializer() {
     const dispatch = useDispatch();
     const [userData, setUserData] = useState(null);
+
     const loadUserData = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
         let user = null;
+
         if (token) {
           const response = await userInfo();
           if (response?.success) {
             user = response.user;
-            dispatch(setUser(response.user));
-            setUserData(user);
-            await AsyncStorage.setItem("user", JSON.stringify(response.user));
+            await AsyncStorage.setItem("user", JSON.stringify(user));
           }
-        } else {
+        }
+
+        if (!user) {
           const storedUser = await AsyncStorage.getItem("user");
           user = storedUser ? JSON.parse(storedUser) : null;
-          dispatch(setUser(user));
-          setUserData(user);
         }
+
+        dispatch(setUser(user));
+        setUserData(user);
 
       } catch (error) {
         console.log(error);
@@ -41,26 +44,33 @@ export default function RootLayout() {
       loadUserData();
     }, []);
 
-
     useEffect(() => {
-      if (!userData?._id) return;
-      socket.connect();
+      const userId = userData?._id;
 
-      socket.on("connect", () => {
-        console.log("Socket connected:", socket.id);
-        socket.emit("join", userData?._id);
-      });
-      return () => {
-        socket.off("connect");
-        socket.disconnect();
+      if (!userId) return;
 
+      if (!socket.connected) {
+        socket.connect();
       }
+
+      const onConnect = () => {
+        console.log("Socket connected:", socket.id);
+        socket.emit("join", userId);
+      };
+
+      socket.on("connect", onConnect);
+
+      if (socket.connected) {
+        socket.emit("join", userId);
+      }
+
+      return () => {
+        socket.off("connect", onConnect);
+      };
     }, [userData]);
-
-
-
     return null;
   }
+
 
   return (
     <Provider store={store} >
@@ -70,4 +80,5 @@ export default function RootLayout() {
       </Stack>
     </Provider>
   );
+
 }

@@ -18,7 +18,7 @@ const EditProfile = () => {
     const profile = useSelector(state => state.profile.profile || []);
 
     const [form, setForm] = useState({
-        userId: user?.id || "",
+        userId: user?._id || "",
         name: "",
         email: "",
         phone: " ",
@@ -29,7 +29,7 @@ const EditProfile = () => {
 
     useEffect(() => {
         setForm({
-            userId: user?.id || profile?.userId || "",
+            userId: user?._id || profile?._userId || "",
             name: user?.name || profile?.name || "",
             email: user?.email || profile?.email || "",
             phone: profile?.phone || "",
@@ -60,7 +60,7 @@ const EditProfile = () => {
     };
 
     const fetchProfile = async () => {
-        const res = await getProfile(user?.id);
+        const res = await getProfile(user?._id);
         if (res?.success) {
             dispatch(setProfile(res.profile));
         }
@@ -99,7 +99,7 @@ const EditProfile = () => {
                             <TextInput placeholder="write your bio" style={[styles.input, styles.bioInput]} value={form.bio} onChangeText={(text) => handleChange('bio', text)} multiline textAlignVertical="top" maxLength={200} />
                             <LoadingButton title={'Update Profile'} loading={loading} style={styles.saveBtn} onPress={handleSave} />
                         </View>
-                        
+
                     </ScrollView>
                 </KeyboardAvoidingView >
 
