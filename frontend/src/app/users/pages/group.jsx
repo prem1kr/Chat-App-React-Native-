@@ -76,7 +76,6 @@ export default function GroupScreen() {
       isTemp: true,
     };
 
-    dispatch(addGroupMessage(tempMsg));
     dispatch(updateChat({ _id: groupId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
     setText("");
     await sendMessage({ groupId, text: messageText, messageType: "text" });
