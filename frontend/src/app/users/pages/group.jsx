@@ -123,6 +123,7 @@ export default function GroupScreen() {
     const handleGroupMessage = (message) => {
       if (!message || message.groupId !== groupId) return;
         if (message.sender?._id === userId) return;
+        dispatch(deleteGroupMessage(tempId));
       dispatch(addGroupMessage(message));
     };
 
