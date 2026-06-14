@@ -81,7 +81,11 @@ const Chat = () => {
     useEffect(() => {
         loadMessages();
         socket.emit("joinChat", chatId);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> c3e1c2dd283d0fc06937394f7d23711c2ea55c69
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
@@ -97,13 +101,21 @@ const Chat = () => {
         });
 
         socket.on("messageDelivered", ({ messageId, userId: uid }) => {
+<<<<<<< HEAD
             dispatch(updateMessage({ _id: messageId, deliveredTo: [uid] }));
         });
 
         socket.on("messageRead", ({ messageId, userId: uid }) => {
             dispatch(updateMessage({ _id: messageId, readBy: [uid] }));
+=======
+            dispatch(updateMessage({_id: messageId,deliveredTo: [uid]}));
         });
 
+        socket.on("messageRead", ({ messageId, userId: uid }) => {
+            dispatch(updateMessage({_id: messageId,readBy: [uid]}));
+>>>>>>> c3e1c2dd283d0fc06937394f7d23711c2ea55c69
+        });
+        
         return () => {
             socket.off("newMessage");
             socket.off("messageDeleted");
@@ -111,6 +123,7 @@ const Chat = () => {
             socket.off("messageRead");
         };
     }, [chatId, userId]);
+
 
     useEffect(() => {
         if (!messages.length) return;

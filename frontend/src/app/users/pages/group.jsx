@@ -77,6 +77,7 @@ export default function GroupScreen() {
   };
 
 
+
   const readProcessed = useRef(false);
 
   useEffect(() => {
@@ -163,8 +164,13 @@ export default function GroupScreen() {
       const delivered = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
       const readBy = Array.isArray(item.readBy) ? item.readBy : [];
 
+<<<<<<< HEAD
       const deliveredCount = delivered.filter(id => id !== userId).length;
       const readCount = readBy.filter(id => id !== userId).length;
+=======
+      const deliveredCount = deliveredTo.includes(item.sender?._id) === false && deliveredTo.length > 0;
+      const readCount = readBy.includes(item.sender?._id) === false && readBy.length > 0;
+>>>>>>> c3e1c2dd283d0fc06937394f7d23711c2ea55c69
 
       if (readCount > 0) {
         return <Ionicons name="checkmark-done" size={16} color="#3b82f6" />;

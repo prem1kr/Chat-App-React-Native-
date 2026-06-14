@@ -19,6 +19,7 @@ export const markAsDelivered = async (req, res) => {
 
     io.to(message.sender.toString()).emit("messageDelivered", { messageId, userId });
 
+    
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -41,8 +42,9 @@ export const markAsRead = async (req, res) => {
       return res.status(404).json({ success: false, message: "Message not found" });
     }
 
-    io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
+     io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
 
+    
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
