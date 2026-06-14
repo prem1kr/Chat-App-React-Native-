@@ -66,9 +66,14 @@ export default function UserHome() {
         };
 
         const handleNewMessage = (data) => {
-            dispatch(updateChat(data.chat));
+            if (!data?.chat?._id) {
+                console.log("Invalid newMessage payload:", data);
+                return;
+            }
 
+            dispatch(updateChat(data.chat));
         };
+
 
         const handleGroupMessage = (message) => {
             dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
