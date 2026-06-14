@@ -96,14 +96,14 @@ const Chat = () => {
             }
         });
 
-        socket.on("messageDelivered", ({ messageId, userId }) => {
-            dispatch(updateMessage({ _id: messageId, deliveredTo: userId }));
+        socket.on("messageDelivered", ({ messageId, userId: uid }) => {
+            dispatch(updateMessage({_id: messageId,deliveredTo: [uid]}));
         });
 
-        socket.on("messageRead", ({ messageId, userId }) => {
-            dispatch(updateMessage({ _id: messageId, readBy: userId }));
+        socket.on("messageRead", ({ messageId, userId: uid }) => {
+            dispatch(updateMessage({_id: messageId,readBy: [uid]}));
         });
-
+        
         return () => {
             socket.off("newMessage");
             socket.off("messageDeleted");
