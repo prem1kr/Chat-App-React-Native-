@@ -81,9 +81,11 @@ const Chat = () => {
     useEffect(() => {
         loadMessages();
         socket.emit("joinChat", chatId);
+
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
+                dispatch(updateMessage({ _id: msg._id, ...msg }));
             }
         });
 
@@ -94,12 +96,12 @@ const Chat = () => {
             }
         });
 
-        socket.on("messageDelivered", ({ messageId, userId }) => {
-            dispatch(updateMessage({ _id: messageId, deliveredTo: userId }));
+        socket.on("messageDelivered", ({ messageId, userId: uid }) => {
+            dispatch(updateMessage({ _id: messageId, deliveredTo: [uid] }));
         });
 
-        socket.on("messageRead", ({ messageId, userId }) => {
-            dispatch(updateMessage({ _id: messageId, readBy: userId }));
+        socket.on("messageRead", ({ messageId, userId: uid }) => {
+            dispatch(updateMessage({ _id: messageId, readBy: [uid] }));
         });
 
         return () => {
@@ -110,29 +112,31 @@ const Chat = () => {
         };
     }, [chatId, userId]);
 
-    useEffect(() => {
-        if (!messages.length) return;
 
-        const markMessagesRead = async () => {
-            for (const msg of messages) {
-                if (
-                    msg.sender?._id !== userId &&
+    useEffect(() => {
+        if (!messages.length || !userId) return;
+
+        const markReadMessages = async () => {
+            const unread = messages.filter(
+                msg => msg.sender?._id !== userId &&
                     !msg.readBy?.includes(userId)
-                ) {
-                    await markAsRead(msg._id);
-                }
-            }
+            );
+
+            await Promise.all(unread.map(msg => markAsRead(msg._id)));
         };
 
-        markMessagesRead();
+        markReadMessages();
     }, [messages, userId]);
 
 
 
     const renderMessageStatus = (item) => {
         if (item.sender?._id !== userId) return null;
-        const isRead = item.readBy?.length > 0 && item.readBy.some((id) => id !== userId);
-        const isDelivered = item.deliveredTo?.length > 0 && item.deliveredTo.some((id) => id !== userId);
+        const readBy = Array.isArray(item.readBy) ? item.readBy : [];
+        const deliveredTo = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
+        const isDelivered = deliveredTo.includes(item.sender?._id) === false && deliveredTo.length > 0;
+        const isRead = readBy.includes(item.sender?._id) === false && readBy.length > 0;
+
         if (isRead) {
             return (<Ionicons name="checkmark-done" size={16} color="#3b82f6" />);
         }

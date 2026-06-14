@@ -76,22 +76,16 @@ export default function GroupScreen() {
     await sendMessage({ groupId, text: messageText, messageType: "text" });
   };
 
-
-  const readProcessed = useRef(false);
-
   useEffect(() => {
     if (!messages.length || !userId) return;
-    if (readProcessed.current) return;
 
     const markReadMessages = async () => {
       const unread = messages.filter(
-        (msg) =>
-          msg.sender?._id !== userId &&
+        msg => msg.sender?._id !== userId &&
           !msg.readBy?.includes(userId)
       );
 
-      await Promise.all(unread.map((msg) => markAsRead(msg._id)));
-      readProcessed.current = true;
+      await Promise.all(unread.map(msg => markAsRead(msg._id)));
     };
 
     markReadMessages();
@@ -118,30 +112,48 @@ export default function GroupScreen() {
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
-    socket.on("groupMessage", (message) => {
-      if (message.sender?._id === userId) return;
-      dispatch(updateGroupMessage({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt })
-      );
-    });
 
-    socket.on("groupMessageDeleted", (data) => {
+    const handleGroupMessage = (message) => {
+      if (!message || message.groupId !== groupId) return;
+      dispatch(addGroupMessage(message));
+    };
+
+    const handleDeleted = (data) => {
       dispatch(deleteGroupMessage(data.messageId));
-      dispatch(updateChat({ _id: data.groupId, lastMessage: data.lastMessage, lastMessageTime: data.lastMessageTime }));
+    };
+
+    const handleDelivered = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [uid] }));
+    };
+
+    const handleRead = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, readBy: [uid] }));
+    };
+
+    socket.on("groupMessage", handleGroupMessage);
+    socket.on("groupMessageDeleted", handleDeleted);
+    socket.on("messageDelivered", handleDelivered);
+    socket.on("messageRead", handleRead);
+    // ✅ USER JOIN ROOM (REQUIRED)
+    socket.on("join", (userId) => {
+      socket.join(userId);
     });
 
-    socket.on("messageDelivered", ({ messageId, userId }) => {
-      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: userId }));
+    // optional (if you use chat rooms)
+    socket.on("joinChat", (chatId) => {
+      socket.join(chatId);
     });
 
-    socket.on("messageRead", ({ messageId, userId }) => {
-      dispatch(updateGroupMessage({ _id: messageId, readBy: userId }));
+    socket.on("joinGroup", (groupId) => {
+      socket.join(groupId);
     });
+
 
     return () => {
-      socket.off("groupMessage");
-      socket.off("groupMessageDeleted");
-      socket.off("messageDelivered");
-      socket.off("messageRead");
+      socket.off("groupMessage", handleGroupMessage);
+      socket.off("groupMessageDeleted", handleDeleted);
+      socket.off("messageDelivered", handleDelivered);
+      socket.off("messageRead", handleRead);
     };
   }, [groupId]);
 
@@ -156,8 +168,11 @@ export default function GroupScreen() {
 
     const renderMessageStatus = (item) => {
       if (item.sender?._id !== userId) return null;
-      const deliveredCount = (item.deliveredTo || []).filter(id => id !== userId).length;
-      const readCount = (item.readBy || []).filter(id => id !== userId).length;
+      const delivered = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
+      const readBy = Array.isArray(item.readBy) ? item.readBy : [];
+      const deliveredCount = deliveredTo.includes(item.sender?._id) === false && deliveredTo.length > 0;
+      const readCount = readBy.includes(item.sender?._id) === false && readBy.length > 0;
+
       if (readCount > 0) {
         return <Ionicons name="checkmark-done" size={16} color="#3b82f6" />;
       }
