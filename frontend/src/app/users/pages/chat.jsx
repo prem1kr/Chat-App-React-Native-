@@ -112,22 +112,20 @@ const Chat = () => {
         };
     }, [chatId, userId]);
 
-    useEffect(() => {
-        if (!messages.length) return;
+  useEffect(() => {
+    if (!messages.length || !userId) return;
 
-        const markMessagesRead = async () => {
-            for (const msg of messages) {
-                if (
-                    msg.sender?._id !== userId &&
-                    !msg.readBy?.includes(userId)
-                ) {
-                    await markAsRead(msg._id);
-                }
-            }
-        };
+    const markReadMessages = async () => {
+      const unread = messages.filter(
+        msg => msg.sender?._id !== userId &&
+          !msg.readBy?.includes(userId)
+      );
 
-        markMessagesRead();
-    }, [messages, userId]);
+      await Promise.all(unread.map(msg => markAsRead(msg._id)));
+    };
+
+    markReadMessages();
+  }, [messages, userId]);
 
 
 
