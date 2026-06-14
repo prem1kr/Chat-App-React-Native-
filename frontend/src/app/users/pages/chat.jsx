@@ -81,9 +81,11 @@ const Chat = () => {
     useEffect(() => {
         loadMessages();
         socket.emit("joinChat", chatId);
+        
         socket.on("newMessage", (msg) => {
             if (msg.chatId === chatId) {
                 dispatch(addMessage(msg));
+                dispatch(updateMessage({ _id: msg._id, ...msg }));
             }
         });
 
