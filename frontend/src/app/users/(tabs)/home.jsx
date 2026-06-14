@@ -65,15 +65,9 @@ export default function UserHome() {
             dispatch(removeChat(data.groupId));
         };
 
-        const handleNewMessage = (data) => {
-            if (!data?.chat?._id) {
-                console.log("Invalid newMessage payload:", data);
-                return;
-            }
-
-            dispatch(updateChat(data.chat));
+        const handleNewMessage = (message) => {
+            dispatch(updateChat({ _id: message.chatId, lastMessage: message.text, lastMessageTime: message.createdAt }));
         };
-
 
         const handleGroupMessage = (message) => {
             dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
@@ -241,16 +235,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#eef2ff",
         elevation: 4,
-    },
-
-    avatar: {
-        width: 58,
-        height: 58,
-        borderRadius: 29,
-        backgroundColor: "#7b5cff",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 14,
     },
 
     avatarText: {
