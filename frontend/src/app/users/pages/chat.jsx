@@ -317,6 +317,6 @@ const styles = StyleSheet.create({
     timeText: {
         fontSize: 11,
         color: "#9CA3AF",
-    },
+    }
 
 });
