@@ -156,8 +156,12 @@ export default function GroupScreen() {
 
     const renderMessageStatus = (item) => {
       if (item.sender?._id !== userId) return null;
-      const deliveredCount = (item.deliveredTo || []).filter(id => id !== userId).length;
-      const readCount = (item.readBy || []).filter(id => id !== userId).length;
+      const delivered = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
+      const readBy = Array.isArray(item.readBy) ? item.readBy : [];
+
+      const deliveredCount = delivered.filter(id => id !== userId).length;
+      const readCount = readBy.filter(id => id !== userId).length;
+
       if (readCount > 0) {
         return <Ionicons name="checkmark-done" size={16} color="#3b82f6" />;
       }
