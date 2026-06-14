@@ -118,30 +118,34 @@ export default function GroupScreen() {
 
   useEffect(() => {
     socket.emit("joinGroup", groupId);
-    socket.on("groupMessage", (message) => {
-      if (message.sender?._id === userId) return;
+
+    const handleGroupMessage = (message) => {
+      if (!message || message.groupId !== groupId) return;
       dispatch(addGroupMessage(message));
-      dispatch(updateGroupMessage({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
-    });
+    };
 
-    socket.on("groupMessageDeleted", (data) => {
+    const handleDeleted = (data) => {
       dispatch(deleteGroupMessage(data.messageId));
-      dispatch(updateChat({ _id: data.groupId, lastMessage: data.lastMessage, lastMessageTime: data.lastMessageTime }));
-    });
+    };
 
-    socket.on("messageDelivered", ({ messageId, userId }) => {
-      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [userId] }));
-    });
+    const handleDelivered = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: uid }));
+    };
 
-    socket.on("messageRead", ({ messageId, userId }) => {
-      dispatch(updateGroupMessage({ _id: messageId, readBy: [userId] }));
-    });
+    const handleRead = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, readBy: uid }));
+    };
+
+    socket.on("groupMessage", handleGroupMessage);
+    socket.on("groupMessageDeleted", handleDeleted);
+    socket.on("messageDelivered", handleDelivered);
+    socket.on("messageRead", handleRead);
 
     return () => {
-      socket.off("groupMessage");
-      socket.off("groupMessageDeleted");
-      socket.off("messageDelivered");
-      socket.off("messageRead");
+      socket.off("groupMessage", handleGroupMessage);
+      socket.off("groupMessageDeleted", handleDeleted);
+      socket.off("messageDelivered", handleDelivered);
+      socket.off("messageRead", handleRead);
     };
   }, [groupId]);
 
