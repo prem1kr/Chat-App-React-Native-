@@ -163,7 +163,6 @@ export default function GroupScreen() {
       if (item.sender?._id !== userId) return null;
       const delivered = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
       const readBy = Array.isArray(item.readBy) ? item.readBy : [];
-
       const deliveredCount = delivered.filter(id => id !== userId).length;
       const readCount = readBy.filter(id => id !== userId).length;
 
