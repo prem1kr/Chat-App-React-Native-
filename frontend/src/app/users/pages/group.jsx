@@ -77,16 +77,22 @@ export default function GroupScreen() {
   };
 
 
+
+  const readProcessed = useRef(false);
+
   useEffect(() => {
     if (!messages.length || !userId) return;
+    if (readProcessed.current) return;
 
     const markReadMessages = async () => {
       const unread = messages.filter(
-        msg => msg.sender?._id !== userId &&
+        (msg) =>
+          msg.sender?._id !== userId &&
           !msg.readBy?.includes(userId)
       );
 
-      await Promise.all(unread.map(msg => markAsRead(msg._id)));
+      await Promise.all(unread.map((msg) => markAsRead(msg._id)));
+      readProcessed.current = true;
     };
 
     markReadMessages();
