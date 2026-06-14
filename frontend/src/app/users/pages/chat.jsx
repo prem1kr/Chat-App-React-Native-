@@ -132,7 +132,7 @@ const Chat = () => {
     const renderMessageStatus = (item) => {
         if (item.sender?._id !== userId) return null;
         const isRead = item.readBy?.length > 0 && item.readBy.some((id) => id !== userId);
-        const isDelivered = item.deliveredTo?.length > 0 && item.deliveredTo.some((id) => id !== userId);
+        const isDelivered =Array.isArray(item.deliveredTo) && item.deliveredTo.length > 0 && item.deliveredTo.some(id => id !== userId);   
         if (isRead) {
             return (<Ionicons name="checkmark-done" size={16} color="#3b82f6" />);
         }
