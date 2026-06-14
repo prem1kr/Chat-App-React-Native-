@@ -17,14 +17,8 @@ export const markAsDelivered = async (req, res) => {
       return res.status(404).json({ success: false, message: "Message not found" });
     }
 
-   io.to(message.sender.toString()).emit("messageDelivered", {messageId,userId});
+    io.to(message.sender.toString()).emit("messageDelivered", { messageId, userId });
 
-    if (message.groupId) {
-      const group = await groupModel.findById(message.groupId);
-      group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageDelivered", {messageId,userId});
-      });
-    }
     
     return res.status(200).json({ success: true, message });
   } catch (error) {
