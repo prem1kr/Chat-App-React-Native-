@@ -120,8 +120,8 @@ export default function GroupScreen() {
     socket.emit("joinGroup", groupId);
     socket.on("groupMessage", (message) => {
       if (message.sender?._id === userId) return;
-      dispatch(updateGroupMessage({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt })
-      );
+      dispatch(addGroupMessage(message));
+      dispatch(updateGroupMessage({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
     });
 
     socket.on("groupMessageDeleted", (data) => {
