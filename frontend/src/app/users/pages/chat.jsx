@@ -134,7 +134,7 @@ const Chat = () => {
         const readBy = Array.isArray(item.readBy) ? item.readBy : [];
         const deliveredTo = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
         const isRead = readBy.length > 0 && readBy.some(id => id !== userId);
-        const isDelivered = deliveredTo.length > 0 && deliveredTo.some(id => id !== userId); const isDelivered = Array.isArray(item.deliveredTo) && item.deliveredTo.length > 0 && item.deliveredTo.some(id => id !== userId);
+        const isDelivered = Array.isArray(item.deliveredTo) && item.deliveredTo.length > 0 && item.deliveredTo.some(id => id !== userId);
 
         if (isRead) {
             return (<Ionicons name="checkmark-done" size={16} color="#3b82f6" />);
