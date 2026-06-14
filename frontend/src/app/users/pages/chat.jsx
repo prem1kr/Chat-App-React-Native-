@@ -112,20 +112,21 @@ const Chat = () => {
         };
     }, [chatId, userId]);
 
-
     useEffect(() => {
-        if (!messages.length || !userId) return;
+        if (!messages.length) return;
 
-        const markReadMessages = async () => {
-            const unread = messages.filter(
-                msg => msg.sender?._id !== userId &&
+        const markMessagesRead = async () => {
+            for (const msg of messages) {
+                if (
+                    msg.sender?._id !== userId &&
                     !msg.readBy?.includes(userId)
-            );
-
-            await Promise.all(unread.map(msg => markAsRead(msg._id)));
+                ) {
+                    await markAsRead(msg._id);
+                }
+            }
         };
 
-        markReadMessages();
+        markMessagesRead();
     }, [messages, userId]);
 
 
@@ -134,8 +135,8 @@ const Chat = () => {
         if (item.sender?._id !== userId) return null;
         const readBy = Array.isArray(item.readBy) ? item.readBy : [];
         const deliveredTo = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
-        const isDelivered = deliveredTo.includes(item.sender?._id) === false && deliveredTo.length > 0;
-        const isRead = readBy.includes(item.sender?._id) === false && readBy.length > 0;
+        const isRead = readBy.length > 0 && readBy.some(id => id !== userId);
+        const isDelivered = Array.isArray(item.deliveredTo) && item.deliveredTo.length > 0 && item.deliveredTo.some(id => id !== userId);
 
         if (isRead) {
             return (<Ionicons name="checkmark-done" size={16} color="#3b82f6" />);

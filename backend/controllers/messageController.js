@@ -19,13 +19,6 @@ export const markAsDelivered = async (req, res) => {
 
     io.to(message.sender.toString()).emit("messageDelivered", { messageId, userId });
 
-    if (message.groupId) {
-      const group = await groupModel.findById(message.groupId);
-      group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageDelivered", { messageId, userId });
-      });
-    }
-
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -50,13 +43,6 @@ export const markAsRead = async (req, res) => {
 
     io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
 
-    if (message.groupId) {
-      const group = await groupModel.findById(message.groupId);
-      group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageRead", { messageId, userId });
-      });
-    }
-    
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -113,7 +99,7 @@ export const getChatMessages = async (req, res) => {
     const { chatId } = req.params;
     const messages = await messageModel.find({ chatId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
     return res.status(200).json({ success: true, messages });
-
+    
   } catch (error) {
     return res.status(500).json({
       success: false,

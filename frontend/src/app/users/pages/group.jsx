@@ -76,16 +76,22 @@ export default function GroupScreen() {
     await sendMessage({ groupId, text: messageText, messageType: "text" });
   };
 
+
+  const readProcessed = useRef(false);
+
   useEffect(() => {
     if (!messages.length || !userId) return;
+    if (readProcessed.current) return;
 
     const markReadMessages = async () => {
       const unread = messages.filter(
-        msg => msg.sender?._id !== userId &&
+        (msg) =>
+          msg.sender?._id !== userId &&
           !msg.readBy?.includes(userId)
       );
 
-      await Promise.all(unread.map(msg => markAsRead(msg._id)));
+      await Promise.all(unread.map((msg) => markAsRead(msg._id)));
+      readProcessed.current = true;
     };
 
     markReadMessages();
@@ -123,31 +129,17 @@ export default function GroupScreen() {
     };
 
     const handleDelivered = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [uid] }));
+      dispatch(updateGroupMessage({_id: messageId,deliveredTo: [uid]}));
     };
 
     const handleRead = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({ _id: messageId, readBy: [uid] }));
+      dispatch(updateGroupMessage({_id: messageId,readBy: [uid]}));
     };
 
     socket.on("groupMessage", handleGroupMessage);
     socket.on("groupMessageDeleted", handleDeleted);
     socket.on("messageDelivered", handleDelivered);
     socket.on("messageRead", handleRead);
-    // ✅ USER JOIN ROOM (REQUIRED)
-    socket.on("join", (userId) => {
-      socket.join(userId);
-    });
-
-    // optional (if you use chat rooms)
-    socket.on("joinChat", (chatId) => {
-      socket.join(chatId);
-    });
-
-    socket.on("joinGroup", (groupId) => {
-      socket.join(groupId);
-    });
-
 
     return () => {
       socket.off("groupMessage", handleGroupMessage);
@@ -170,8 +162,9 @@ export default function GroupScreen() {
       if (item.sender?._id !== userId) return null;
       const delivered = Array.isArray(item.deliveredTo) ? item.deliveredTo : [];
       const readBy = Array.isArray(item.readBy) ? item.readBy : [];
-      const deliveredCount = deliveredTo.includes(item.sender?._id) === false && deliveredTo.length > 0;
-      const readCount = readBy.includes(item.sender?._id) === false && readBy.length > 0;
+
+      const deliveredCount = delivered.filter(id => id !== userId).length;
+      const readCount = readBy.filter(id => id !== userId).length;
 
       if (readCount > 0) {
         return <Ionicons name="checkmark-done" size={16} color="#3b82f6" />;
