@@ -129,11 +129,11 @@ export default function GroupScreen() {
     };
 
     const handleDelivered = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: uid }));
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [uid] }));
     };
 
     const handleRead = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({ _id: messageId, readBy: uid }));
+      dispatch(updateGroupMessage({ _id: messageId, readBy: [uid] }));
     };
 
     socket.on("groupMessage", handleGroupMessage);
