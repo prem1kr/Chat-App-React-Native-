@@ -42,14 +42,8 @@ export const markAsRead = async (req, res) => {
       return res.status(404).json({ success: false, message: "Message not found" });
     }
 
-    io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
+     io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
 
-    if (message.groupId) {
-      const group = await groupModel.findById(message.groupId);
-      group.members.forEach((memberId) => {
-        io.to(memberId.toString()).emit("groupMessageRead", { messageId, userId });
-      });
-    }
     
     return res.status(200).json({ success: true, message });
   } catch (error) {
