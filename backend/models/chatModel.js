@@ -16,6 +16,12 @@ const chatSchema = new mongoose.Schema(
         lastMessageTime: {
             type: Date,
         },
+        
+        unreadCounts: {
+            type: Map,
+            of: Number,
+            default: {},
+        },
 
     }, { timestamps: true });
 

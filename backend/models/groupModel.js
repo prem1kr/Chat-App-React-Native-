@@ -32,6 +32,12 @@ const groupSchema = new mongoose.Schema({
         type: Date,
     },
 
+    unreadCounts: {
+        type: Map,
+        of: Number,
+        default: {},
+    },
+
 }, { timestamps: true });
 
 export default mongoose.model("Group", groupSchema);
