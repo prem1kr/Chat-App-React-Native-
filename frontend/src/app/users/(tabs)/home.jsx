@@ -70,10 +70,6 @@ export default function UserHome() {
             dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt, unreadCount: message.unreadCount }));
         };
 
-        const handleGroupMessage = (message) => {
-            dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt }));
-        };
-
         const handleChatMessage = (message) => {
             dispatch(updateChat({ _id: message.chatId, lastMessage: message.text, lastMessageTime: message.createdAt }));
         };
