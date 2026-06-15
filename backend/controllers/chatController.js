@@ -14,9 +14,8 @@ export const createOrGetChat = async (req, res) => {
     let chat = await chatModel.findOne({ participants: { $all: [userId, receiverId] } });
     if (!chat) {
       chat = await chatModel.create({
-        participants: [userId, receiverId],
-        lastMessage: null,
-        lastMessageTime: new Date(),
+        participants: [userId, receiverId], lastMessage: "", lastMessageTime: new Date(),
+        unreadCounts: { [userId]: 0, [receiverId]: 0 },
       });
 
       chat = await chatModel.findById(chat._id).populate("participants", "name email profilePic isOnline");
@@ -40,19 +39,7 @@ export const getUserChats = async (req, res) => {
   try {
     const userId = req.user.id;
     const chats = await chatModel.find({ participants: userId }).populate("participants", "name email profilePic isOnline").sort({ lastMessageTime: -1 });
-
-    const chatsWithUnread = await Promise.all(
-      chats.map(async (chat) => {
-        const unreadCount = await messageModel.countDocuments({
-          chatId: chat._id,
-          sender: { $ne: userId },
-          readBy: { $nin: [userId] },
-        });
-
-        return { ...chat.toObject(), unreadCount };
-      })
-    );
-
+    const chatsWithUnread = chats.map((chat) => ({...chat.toObject(),unreadCount:chat.unreadCounts?.get(userId.toString()) || 0,}));
     return res.status(200).json({ success: true, chats: chatsWithUnread });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });

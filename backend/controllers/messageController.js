@@ -19,7 +19,7 @@ export const markAsDelivered = async (req, res) => {
 
     io.to(message.sender.toString()).emit("messageDelivered", { messageId, userId });
 
-    
+
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
@@ -38,14 +38,16 @@ export const markAsRead = async (req, res) => {
       { new: true }
     );
 
-    if (!message) {
-      return res.status(404).json({ success: false, message: "Message not found" });
+    if (message.chatId) {
+      await chatModel.findByIdAndUpdate(message.chatId, { $set: { [`unreadCounts.${userId}`]: 0 } });
+    }
+    if (message.groupId) {
+      await groupModel.findByIdAndUpdate(message.groupId, { $set: { [`unreadCounts.${userId}`]: 0 } });
     }
 
-     io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
-
-    
+    io.to(message.sender.toString()).emit("messageRead", { messageId, userId });
     return res.status(200).json({ success: true, message });
+
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
 
@@ -76,17 +78,24 @@ export const sendMessage = async (req, res) => {
     const populatedMessage = await messageModel.findById(message._id).populate("sender", "name profilePic");
     const updateData = { lastMessage: text || messageType, lastMessageTime: new Date(), };
     if (chatId) {
-      await chatModel.findByIdAndUpdate(chatId, updateData);
       const chat = await chatModel.findById(chatId);
       const receiverId = chat.participants.find((id) => id.toString() !== sender);
+      const unreadCounts = chat.unreadCounts || {};
+      unreadCounts.set(receiverId.toString(), (unreadCounts.get(receiverId.toString()) || 0) + 1);
+      await chatModel.findByIdAndUpdate(chatId, { ...updateData, unreadCounts });
       io.to(receiverId.toString()).emit("newMessage", populatedMessage);
       io.to(sender.toString()).emit("messageSent", populatedMessage);
     }
 
     if (groupId) {
-      await groupModel.findByIdAndUpdate(groupId, updateData);
       const group = await groupModel.findById(groupId);
-      group.members.forEach((memberId) => { io.to(memberId.toString()).emit("groupMessage", populatedMessage); });
+      const unreadCounts = group.unreadCounts || {};
+      group.members.forEach((memberId) => {
+        if (memberId.toString() !== sender) { unreadCounts.set(memberId.toString(), (unreadCounts.get(memberId.toString()) || 0) + 1) }
+      });
+
+      await groupModel.findByIdAndUpdate(groupId, { ...updateData, unreadCounts });
+      group.members.forEach((memberId) => { io.to(memberId.toString()).emit("groupMessage", populatedMessage) });
     }
 
     return res.status(201).json({ success: true, data: populatedMessage });
@@ -101,7 +110,7 @@ export const getChatMessages = async (req, res) => {
     const { chatId } = req.params;
     const messages = await messageModel.find({ chatId }).populate("sender", "name profilePic").sort({ createdAt: 1 });
     return res.status(200).json({ success: true, messages });
-    
+
   } catch (error) {
     return res.status(500).json({
       success: false,

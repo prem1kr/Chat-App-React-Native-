@@ -102,7 +102,7 @@ const Chat = () => {
         socket.on("messageRead", ({ messageId, userId: uid }) => {
             dispatch(updateMessage({ _id: messageId, readBy: [uid] }));
         });
-        
+
         return () => {
             socket.off("newMessage");
             socket.off("messageDeleted");
@@ -124,11 +124,12 @@ const Chat = () => {
                     await markAsRead(msg._id);
                 }
             }
+            dispatch(updateChat({ _id: chatId, unreadCount: 0 }));
+
         };
 
         markMessagesRead();
     }, [messages, userId]);
-
 
 
     const renderMessageStatus = (item) => {

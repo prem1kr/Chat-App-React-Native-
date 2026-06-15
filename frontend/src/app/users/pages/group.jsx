@@ -91,6 +91,7 @@ export default function GroupScreen() {
           !msg.readBy?.includes(userId)
       );
 
+      dispatch(updateChat({ _id: groupId, unreadCount: 0 }));
       await Promise.all(unread.map((msg) => markAsRead(msg._id)));
       readProcessed.current = true;
     };
@@ -122,8 +123,8 @@ export default function GroupScreen() {
 
     const handleGroupMessage = (message) => {
       if (!message || message.groupId !== groupId) return;
-        if (message.sender?._id === userId) return;
-        dispatch(deleteGroupMessage(tempId));
+      if (message.sender?._id === userId) return;
+      dispatch(deleteGroupMessage(tempId));
       dispatch(addGroupMessage(message));
 
     };
@@ -517,4 +518,4 @@ const styles = StyleSheet.create({
   },
 
 });
- 
+

@@ -13,11 +13,16 @@ export const createGroup = async (req, res) => {
 
     const uniqueMembers = [...new Set([...(members || []), admin])];
 
+    const unreadCounts = {};
+
+    uniqueMembers.forEach(member => { unreadCounts[member.toString()] = 0 });
+
     const group = await groupModel.create({
       groupName,
       groupImage,
       admin,
       members: uniqueMembers,
+      unreadCounts,
     });
 
     let populatedGroup = await groupModel.findById(group._id).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
@@ -38,19 +43,7 @@ export const getUserGroups = async (req, res) => {
   try {
     const userId = req.user.id;
     const groups = await groupModel.find({ members: userId }).populate("members", "name profilePic").populate("admin", "name profilePic").sort({ lastMessageTime: -1 });
-
-    const groupsWithUnread = await Promise.all(
-      groups.map(async (group) => {
-        const unreadCount = await messageModel.countDocuments({
-          groupId: group._id,
-          sender: { $ne: userId },
-          readBy: { $nin: [userId] },
-        });
-
-        return { ...group.toObject(), unreadCount, };
-      })
-    );
-
+    const groupsWithUnread = groups.map((group) => ({ ...group.toObject(), unreadCount: group.unreadCounts?.get(userId.toString()) || 0 }));
     return res.status(200).json({ success: true, groups: groupsWithUnread });
 
   } catch (error) {
@@ -62,9 +55,7 @@ export const getUserGroups = async (req, res) => {
 export const getGroupById = async (req, res) => {
   try {
     const { groupId } = req.params;
-
     const group = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
-
     if (!group) {
       return res.status(404).json({ success: false, message: "Group not found" });
     }
@@ -101,6 +92,7 @@ export const addMember = async (req, res) => {
     }
 
     group.members.push(memberId);
+    group.unreadCounts.set(memberId.toString(), 0);
     await group.save();
 
     let updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");
@@ -135,6 +127,7 @@ export const removeMember = async (req, res) => {
     }
 
     group.members = group.members.filter((m) => m.toString() !== memberId);
+    group.unreadCounts.delete(memberId.toString());
     await group.save();
 
     let updatedGroup = await groupModel.findById(groupId).populate("admin", "name email profilePic").populate("members", "name email profilePic isOnline");

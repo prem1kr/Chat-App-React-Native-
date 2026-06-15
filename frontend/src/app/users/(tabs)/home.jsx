@@ -27,7 +27,7 @@ export default function UserHome() {
             const groups = groupRes?.groups?.map((group) => ({ ...group, type: "group" })) || [];
             groups.forEach(group => { socket.emit("joinGroup", group._id) });
             dispatch(setChats([...chats, ...groups]));
-        
+
         } catch (error) {
             console.log(error);
         }
@@ -66,8 +66,8 @@ export default function UserHome() {
             dispatch(removeChat(data.groupId));
         };
 
-        const handleNewMessage = (message) => {
-            dispatch(updateChat({ _id: message.chatId, lastMessage: message.text, lastMessageTime: message.createdAt }));
+        const handleGroupMessage = (message) => {
+            dispatch(updateChat({ _id: message.groupId, lastMessage: message.text, lastMessageTime: message.createdAt, unreadCount: message.unreadCount }));
         };
 
         const handleGroupMessage = (message) => {
