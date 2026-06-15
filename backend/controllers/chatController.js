@@ -1,4 +1,5 @@
 import chatModel from "../models/chatModel.js";
+import messageModel from "../models/messageModel.js";
 import { io } from "../socket/socket.js";
 
 export const createOrGetChat = async (req, res) => {
@@ -38,14 +39,23 @@ export const createOrGetChat = async (req, res) => {
 export const getUserChats = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const chats = await chatModel.find({ participants: userId }).populate("participants", "name email profilePic isOnline").sort({ lastMessageTime: -1 });
 
-    return res.status(200).json({ success: true, chats });
+    const chatsWithUnread = await Promise.all(
+      chats.map(async (chat) => {
+        const unreadCount = await messageModel.countDocuments({
+          chatId: chat._id,
+          sender: { $ne: userId },
+          readBy: { $nin: [userId] },
+        });
 
+        return { ...chat.toObject(), unreadCount };
+      })
+    );
+
+    return res.status(200).json({ success: true, chats: chatsWithUnread });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
-
   }
 };
 

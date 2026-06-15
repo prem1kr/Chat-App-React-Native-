@@ -1,4 +1,5 @@
 import groupModel from "../models/groupModel.js";
+import messageModel from "../models/messageModel.js";
 import { io } from "../socket/socket.js";
 
 export const createGroup = async (req, res) => {
@@ -36,16 +37,26 @@ export const createGroup = async (req, res) => {
 export const getUserGroups = async (req, res) => {
   try {
     const userId = req.user.id;
+    const groups = await groupModel.find({ members: userId }).populate("members", "name profilePic").populate("admin", "name profilePic").sort({ lastMessageTime: -1 });
 
-    const groups = await groupModel.find({ members: userId }).populate("admin", "name profilePic").populate("members", "name profilePic").sort({ updatedAt: -1 });
+    const groupsWithUnread = await Promise.all(
+      groups.map(async (group) => {
+        const unreadCount = await messageModel.countDocuments({
+          groupId: group._id,
+          sender: { $ne: userId },
+          readBy: { $nin: [userId] },
+        });
 
-    return res.status(200).json({ success: true, groups });
+        return { ...group.toObject(), unreadCount, };
+      })
+    );
+
+    return res.status(200).json({ success: true, groups: groupsWithUnread });
+
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server Error", error: error.message });
-
   }
 };
-
 
 
 export const getGroupById = async (req, res) => {

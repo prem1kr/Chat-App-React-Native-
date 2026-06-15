@@ -27,6 +27,7 @@ export default function UserHome() {
             const groups = groupRes?.groups?.map((group) => ({ ...group, type: "group" })) || [];
             groups.forEach(group => { socket.emit("joinGroup", group._id) });
             dispatch(setChats([...chats, ...groups]));
+        
         } catch (error) {
             console.log(error);
         }
@@ -170,8 +171,19 @@ export default function UserHome() {
                 </View>
 
                 <View style={styles.row}>
-                    <Text style={styles.message} numberOfLines={1}> {item.lastMessage || "No messages yet"}</Text>
-                    {item.type === "group" && (<Ionicons name="people" size={18} color="#22c55e" />)}
+                    <Text style={styles.message} numberOfLines={1}>{item.lastMessage || "No messages yet"}</Text>
+
+                    <View style={styles.rightSection}>
+                        {item.type === "group" && (
+                            <Ionicons name="people" size={16} color="#22c55e" style={{ marginRight: 6 }} />
+                        )}
+
+                        {item.unreadCount > 0 && (
+                            <View style={styles.unreadBadge}>
+                                <Text style={styles.unreadText}>{item.unreadCount > 99 ? "99+" : item.unreadCount}</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
 
             </View>
@@ -280,5 +292,25 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginRight: 14,
         overflow: "hidden",
+    },
+    rightSection: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+
+    unreadBadge: {
+        minWidth: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: "#22c55e",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 6,
+    },
+
+    unreadText: {
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: "700",
     },
 });

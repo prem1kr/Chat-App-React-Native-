@@ -122,19 +122,22 @@ export default function GroupScreen() {
 
     const handleGroupMessage = (message) => {
       if (!message || message.groupId !== groupId) return;
+      if (message.sender?._id === userId) return;
       dispatch(addGroupMessage(message));
+
     };
 
     const handleDeleted = (data) => {
+
       dispatch(deleteGroupMessage(data.messageId));
     };
 
     const handleDelivered = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({_id: messageId,deliveredTo: [uid]}));
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [uid] }));
     };
 
     const handleRead = ({ messageId, userId: uid }) => {
-      dispatch(updateGroupMessage({_id: messageId,readBy: [uid]}));
+      dispatch(updateGroupMessage({ _id: messageId, readBy: [uid] }));
     };
 
     socket.on("groupMessage", handleGroupMessage);
@@ -205,8 +208,7 @@ export default function GroupScreen() {
         </TouchableOpacity>
 
         {group?.groupImage ? (
-          <Image source={{ uri: group.groupImage }} style={styles.headerAvatar} />
-        ) : (
+          <Image source={{ uri: `https://yourdomain.com${item.groupImage}` }} style={styles.avatar} />) : (
           <View style={styles.headerAvatar}>
             <Text style={styles.headerAvatarText}>{group?.groupName?.split(" ").map((n) => n[0]).join("").toUpperCase()}</Text>
           </View>
@@ -514,4 +516,3 @@ const styles = StyleSheet.create({
   },
 
 });
- 
