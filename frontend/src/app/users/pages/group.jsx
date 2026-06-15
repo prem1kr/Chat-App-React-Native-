@@ -210,7 +210,7 @@ export default function GroupScreen() {
         </TouchableOpacity>
 
         {group?.groupImage ? (
-          <Image source={{ uri: `https://yourdomain.com${item.groupImage}` }} style={styles.avatar} />) : (
+          <Image source={{ uri: group.groupImage }} style={styles.avatar} />) : (
           <View style={styles.headerAvatar}>
             <Text style={styles.headerAvatarText}>{group?.groupName?.split(" ").map((n) => n[0]).join("").toUpperCase()}</Text>
           </View>
