@@ -132,7 +132,7 @@ const handleSend = async () => {
     ]);
   };
   
-seEffect(() => {
+useEffect(() => {
     socket.emit("joinGroup", groupId);
 
     const handleGroupMessage = async(message) => {
