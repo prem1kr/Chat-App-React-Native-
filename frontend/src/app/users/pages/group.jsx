@@ -59,18 +59,20 @@ export default function GroupScreen() {
   const handleSend = async () => {
     if (!text.trim()) return;
     const messageText = text.trim();
-    const tempMsg = {
-      _id: Date.now().toString(),
-      text: messageText,
-      sender: { _id: userId, name: "You" },
-      groupId,
-      createdAt: new Date().toISOString(),
-      deliveredTo: [],
-      readBy: [],
-      isTemp: true,
-    };
+  const tempId = Date.now().toString();
 
-    dispatch(addGroupMessage(tempMsg));
+const tempMsg = {
+  _id: tempId,
+  text: messageText,
+  sender: { _id: userId, name: "You" },
+  groupId,
+  createdAt: new Date().toISOString(),
+  deliveredTo: [],
+  readBy: [],
+  isTemp: true,
+};
+
+dispatch(addGroupMessage(tempMsg));
     dispatch(updateChat({ _id: groupId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
     setText("");
     await sendMessage({ groupId, text: messageText, messageType: "text" });
@@ -122,10 +124,14 @@ export default function GroupScreen() {
     socket.emit("joinGroup", groupId);
 
     const handleGroupMessage = (message) => {
-      if (!message || message.groupId !== groupId) return;
-      if (message.sender?._id === userId) return;
-      dispatch(deleteGroupMessage(tempId));
-      dispatch(addGroupMessage(message));
+    const response = await sendMessage({
+  groupId,
+  text: messageText,
+  messageType: "text",
+});
+
+dispatch(deleteGroupMessage(tempId));
+dispatch(addGroupMessage(response.message));
 
     };
 
