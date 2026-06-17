@@ -131,41 +131,44 @@ const handleSend = async () => {
       },
     ]);
   };
-useEffect(() => {
-  socket.emit("joinGroup", groupId);
+  
+seEffect(() => {
+    socket.emit("joinGroup", groupId);
 
-  const handleGroupMessage = (message) => {
-    if (!message) return;
-    if (message.groupId !== groupId) return;
-    if (message.sender?._id === userId) return;
-    dispatch(addGroupMessage(message));
-    dispatch(updateChat({_id: groupId,lastMessage: message.text, lastMessageTime: message.createdAt}));
-  };
+    const handleGroupMessage = async(message) => {
+    const response = await sendMessage({groupId,text: messageText, messageType: "text"});
+    dispatch(addGroupMessage(response.message));
+    };
 
-  const handleDeleted = ({ messageId }) => {
-    dispatch(deleteGroupMessage(messageId));
-  };
+    const handleDeleted = (data) => {
+      dispatch(deleteGroupMessage(data.messageId));
+    };
 
-  const handleDelivered = ({ messageId, userId: uid }) => {
-    dispatch(updateGroupMessage({_id: messageId,deliveredTo: [uid]}));
-  };
+    const handleDelivered = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, deliveredTo: [uid] }));
+    };
 
-  const handleRead = ({ messageId, userId: uid }) => {
-    dispatch(updateGroupMessage({_id: messageId,readBy: [uid]}));
-  };
+    const handleRead = ({ messageId, userId: uid }) => {
+      dispatch(updateGroupMessage({ _id: messageId, readBy: [uid] }));
+    };
 
-  socket.on("groupMessage", handleGroupMessage);
-  socket.on("groupMessageDeleted", handleDeleted);
-  socket.on("messageDelivered", handleDelivered);
-  socket.on("messageRead", handleRead);
+    socket.on("groupMessage", handleGroupMessage);
+    socket.on("groupMessageDeleted", handleDeleted);
+    socket.on("messageDelivered", handleDelivered);
+    socket.on("messageRead", handleRead);
 
-  return () => {
-    socket.off("groupMessage", handleGroupMessage);
-    socket.off("groupMessageDeleted", handleDeleted);
-    socket.off("messageDelivered", handleDelivered);
-    socket.off("messageRead", handleRead);
-  };
-}, [groupId, userId]);
+    return () => {
+      socket.off("groupMessage", handleGroupMessage);
+      socket.off("groupMessageDeleted", handleDeleted);
+      socket.off("messageDelivered", handleDelivered);
+      socket.off("messageRead", handleRead);
+    };
+  }, [groupId]);
+
+  useEffect(() => {
+    initialize();
+    fetchAllUsers();
+  }, []);
 
   const isAdmin = group?.admin?._id === userId;
   const renderMessage = ({ item }) => {
