@@ -123,7 +123,7 @@ dispatch(addGroupMessage(tempMsg));
   useEffect(() => {
     socket.emit("joinGroup", groupId);
 
-    const handleGroupMessage = (message) => {
+    const handleGroupMessage = async(message) => {
     const response = await sendMessage({
   groupId,
   text: messageText,
