@@ -59,20 +59,18 @@ export default function GroupScreen() {
   const handleSend = async () => {
     if (!text.trim()) return;
     const messageText = text.trim();
-  const tempId = Date.now().toString();
+   const tempMsg = {
+      _id: Date.now().toString(),
+      text: messageText,
+      sender: { _id: userId, name: "You" },
+      groupId,
+      createdAt: new Date().toISOString(),
+      deliveredTo: [],
+      readBy: [],
+      isTemp: true,
+    };
 
-const tempMsg = {
-  _id: tempId,
-  text: messageText,
-  sender: { _id: userId, name: "You" },
-  groupId,
-  createdAt: new Date().toISOString(),
-  deliveredTo: [],
-  readBy: [],
-  isTemp: true,
-};
-
-dispatch(addGroupMessage(tempMsg));
+    dispatch(addGroupMessage(tempMsg));
     dispatch(updateChat({ _id: groupId, lastMessage: messageText, lastMessageTime: tempMsg.createdAt }));
     setText("");
     await sendMessage({ groupId, text: messageText, messageType: "text" });
