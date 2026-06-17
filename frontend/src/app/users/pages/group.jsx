@@ -122,19 +122,11 @@ export default function GroupScreen() {
     socket.emit("joinGroup", groupId);
 
     const handleGroupMessage = async(message) => {
-    const response = await sendMessage({
-  groupId,
-  text: messageText,
-  messageType: "text",
-});
-
-dispatch(deleteGroupMessage(tempId));
-dispatch(addGroupMessage(response.message));
-
+    const response = await sendMessage({groupId,text: messageText, messageType: "text"});
+    dispatch(addGroupMessage(response.message));
     };
 
     const handleDeleted = (data) => {
-
       dispatch(deleteGroupMessage(data.messageId));
     };
 
